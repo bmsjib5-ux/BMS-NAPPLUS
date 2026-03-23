@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Price Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --primary: #1f6feb;
+    --primary-glow: rgba(31,111,235,0.15);
+    --success: #3fb950;
+    --success-bg: rgba(63,185,80,0.1);
+    --error: #f85149;
+    --error-bg: rgba(248,81,73,0.1);
+    --warn: #d29922;
+    --accent: #58a6ff;
+    --teal: #39d353;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-shield {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #1f6feb, #58a6ff);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
+  .header-subtitle {
+    font-size: 11px; color: var(--text-muted);
+    padding: 2px 8px; background: var(--surface2); border-radius: 4px;
+  }
+  .header-spacer { flex: 1; }
+  .user-info-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--text-muted);
+    padding: 4px 10px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .user-info-bar.connected { background: var(--success-bg); border-color: rgba(63,185,80,0.2); }
+  .user-info-bar .user-name { color: var(--success); font-weight: 600; }
+
+  /* Connection Panel */
+  .connect-panel {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .connect-panel label { font-size: 12px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+  .session-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; width: 340px; transition: border-color 0.15s;
+  }
+  .session-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+  .connect-btn {
+    padding: 6px 16px; border-radius: 6px; border: 1px solid var(--primary);
+    background: var(--primary-glow); color: var(--accent);
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .connect-btn:hover { background: var(--primary); color: #fff; }
+  .connect-btn.connected { border-color: var(--error); background: var(--error-bg); color: var(--error); }
+  .connect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Main Content */
+  .main-content { padding: 20px 24px; max-width: 100%; }
+
+  /* Stats */
+  .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; min-width: 160px; flex: 1;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-value.blue { color: var(--accent); }
+  .stat-value.green { color: var(--success); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-value.orange { color: var(--orange); }
+
+  /* Filters */
+  .filter-bar {
+    display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;
+  }
+  .search-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 12px; color: var(--text); font-size: 13px; flex: 1; min-width: 250px;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+  .group-select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 12px; color: var(--text); font-size: 13px; cursor: pointer; min-width: 220px;
+  }
+  .group-select:focus { outline: none; border-color: var(--primary); }
+  .refresh-btn {
+    padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden;
+  }
+  .table-scroll { overflow: auto; max-height: calc(100vh - 300px); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1500px; }
+  thead { position: sticky; top: 0; z-index: 10; }
+  th {
+    background: var(--surface2); color: var(--text);
+    padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px;
+    border-bottom: 2px solid var(--border); white-space: nowrap;
+    position: sticky; top: 0;
+  }
+  th.sub {
+    font-size: 10px; font-weight: 500; color: var(--text-muted);
+    border-bottom: 1px solid var(--border); padding: 4px 10px;
+    top: 33px;
+  }
+  td {
+    padding: 6px 10px; border-bottom: 1px solid rgba(48,54,61,0.5);
+    white-space: nowrap; color: var(--text);
+  }
+  tr:hover td { background: var(--surface2); }
+  .group-header td {
+    background: linear-gradient(90deg, rgba(31,111,235,0.12), transparent);
+    font-weight: 700; font-size: 12px; color: var(--accent);
+    border-top: 2px solid rgba(31,111,235,0.3);
+    border-bottom: 1px solid rgba(31,111,235,0.2);
+    padding: 7px 10px;
+  }
+  .col-icode { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 11px; }
+  .col-name { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+  .col-billcode { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .col-price { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .col-price.base { color: #fff; font-weight: 600; }
+  .col-price.zero { color: rgba(125,133,144,0.4); }
+  .col-group { font-size: 11px; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Price group colors */
+  .pg-ofs { background: rgba(79,195,247,0.06); }
+  .pg-oss { background: rgba(129,199,132,0.06); }
+  .pg-ucs { background: rgba(255,183,77,0.06); }
+  .pg-pay { background: rgba(229,115,115,0.06); }
+  .pg-prb { background: rgba(186,104,200,0.06); }
+  .pg-nas { background: rgba(77,182,172,0.06); }
+  th.pg-ofs-h { color: #4fc3f7; background: rgba(79,195,247,0.12); }
+  th.pg-oss-h { color: #81c784; background: rgba(129,199,132,0.12); }
+  th.pg-ucs-h { color: #ffb74d; background: rgba(255,183,77,0.12); }
+  th.pg-pay-h { color: #e57373; background: rgba(229,115,115,0.12); }
+  th.pg-prb-h { color: #ba68c8; background: rgba(186,104,200,0.12); }
+  th.pg-nas-h { color: #4db6ac; background: rgba(77,182,172,0.12); }
+  .price-ofs { color: #4fc3f7; } .price-oss { color: #81c784; }
+  .price-ucs { color: #ffb74d; } .price-pay { color: #e57373; }
+  .price-prb { color: #ba68c8; } .price-nas { color: #4db6ac; }
+
+  /* Loading & Error */
+  .loading-state, .error-state, .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--text-muted);
+  }
+  .spinner {
+    width: 32px; height: 32px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-state { color: var(--error); }
+  .error-state .error-msg { font-size: 13px; margin-top: 8px; color: var(--text-muted); }
+
+  /* Toast */
+  .toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 6px; z-index: 9999; }
+  .toast {
+    padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    animation: slideIn 0.2s ease; max-width: 320px;
+  }
+  .toast.ok { background: var(--success-bg); border: 1px solid var(--success); color: var(--success); }
+  .toast.err { background: var(--error-bg); border: 1px solid var(--error); color: var(--error); }
+  .toast.info { background: var(--primary-glow); border: 1px solid var(--primary); color: var(--accent); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-shield">L</div>
+    <h1>Lab Price Dashboard</h1>
+  </div>
+  <span class="header-subtitle">v1.0</span>
+  <div class="header-spacer"></div>
+  <div class="user-info-bar" id="userInfoBar">
+    <span id="userInfoText">Not connected</span>
+  </div>
+</div>
+
+<!-- Connection Panel -->
+<div class="connect-panel">
+  <label>BMS Session ID:</label>
+  <input class="session-input" id="sessionId" placeholder="CB411DB0-B121-43C6-B795-80ADECE6A13C">
+  <button class="connect-btn" id="connectBtn" onclick="handleConnect()">Connect</button>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-label">Total Items</div><div class="stat-value blue" id="statTotal">-</div></div>
+    <div class="stat-card"><div class="stat-label">Showing</div><div class="stat-value green" id="statShowing">-</div></div>
+    <div class="stat-card"><div class="stat-label">Lab Groups</div><div class="stat-value purple" id="statGroups">-</div></div>
+    <div class="stat-card"><div class="stat-label">Query Time</div><div class="stat-value orange" id="statTime">-</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <input class="search-input" id="searchInput" placeholder="Search by name, icode, billcode..." oninput="applyFilters()">
+    <select class="group-select" id="groupSelect" onchange="applyFilters()">
+      <option value="all">All Groups</option>
+    </select>
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchData()" disabled>Refresh</button>
+  </div>
+
+  <!-- Table -->
+  <div id="tableArea">
+    <div class="empty-state">Connect to BMS Session to load lab price data</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// State
+let sessionConnected = false;
+let connectionConfig = null;
+let userInfo = null;
+let allData = [];
+let filteredData = [];
+
+const SESSION_COOKIE_NAME = 'bms-session-id';
+const SESSION_COOKIE_DAYS = 7;
+const SESSION_URL_PARAM = 'bms-session-id';
+const DEFAULT_TIMEOUT = 30000;
+
+const PRICE_GROUPS = [
+  { key: 'ofs', label: 'OFS', cls: 'ofs' },
+  { key: 'oss', label: 'OSS', cls: 'oss' },
+  { key: 'ucs', label: 'UCS', cls: 'ucs' },
+  { key: 'pay', label: 'PAY', cls: 'pay' },
+  { key: 'prb', label: 'PRB', cls: 'prb' },
+  { key: 'nas', label: 'NAS', cls: 'nas' },
+];
+
+const LAB_PRICE_SQL = `
+WITH price_groups AS (
+    SELECT p.items_table_code,
+           p.price,
+           i.inc_cover_price,
+           p.pttype_price_group_id
+    FROM pttype_items_price p
+    LEFT JOIN pttype_items_price_inc i ON i.pttype_items_price_id = p.pttype_items_price_id
+    WHERE p.pttype_department_id = 1
+)
+SELECT n.icode, n.name, n.billcode, n.price,
+       COALESCE(sg.active_status,li.active_status) as lab_active,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 1 THEN pg.price END), 0) AS ofs_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 1 THEN pg.inc_cover_price END), 0) AS ofs_price2,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 3 THEN pg.price END), 0) AS oss_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 3 THEN pg.inc_cover_price END), 0) AS oss_price2,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 2 THEN pg.price END), 0) AS ucs_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 2 THEN pg.inc_cover_price END), 0) AS ucs_price2,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 4 THEN pg.price END), 0) AS pay_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 4 THEN pg.inc_cover_price END), 0) AS pay_price2,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 5 THEN pg.price END), 0) AS prb_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 5 THEN pg.inc_cover_price END), 0) AS prb_price2,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 6 THEN pg.price END), 0) AS nas_price,
+       COALESCE(MAX(CASE WHEN pg.pttype_price_group_id = 6 THEN pg.inc_cover_price END), 0) AS nas_price2,
+       COALESCE(li.lab_items_group,sg.lab_items_group_code) as lab_group,
+       lg.lab_items_group_name
+FROM nondrugitems n
+LEFT JOIN price_groups pg ON pg.items_table_code = n.icode
+LEFT JOIN lab_items li ON li.icode = n.icode
+LEFT JOIN lab_items_sub_group sg on sg.group_icode = n.icode
+LEFT JOIN lab_items_group lg on lg.lab_items_group_code = COALESCE(li.lab_items_group,sg.lab_items_group_code)
+WHERE n.income = '07' AND n.istatus = 'Y' AND COALESCE(sg.active_status,li.active_status) = 'Y'
+GROUP BY n.icode, n.name, n.billcode, n.price, lab_active, lab_group, lg.lab_items_group_name
+ORDER BY lab_group
+`;
+
+// Cookie
+function setSessionCookie(id) {
+  const expires = new Date(Date.now() + SESSION_COOKIE_DAYS * 864e5).toUTCString();
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(id)}; expires=${expires}; path=/${secure}; SameSite=Lax`;
+}
+function getSessionCookie() {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + SESSION_COOKIE_NAME + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function removeSessionCookie() {
+  document.cookie = `${SESSION_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
+// URL Session
+function getSessionFromUrl() {
+  const p = new URLSearchParams(window.location.search);
+  const id = p.get(SESSION_URL_PARAM);
+  return id && id.trim() ? id.trim() : null;
+}
+function removeSessionFromUrl() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has(SESSION_URL_PARAM)) {
+    url.searchParams.delete(SESSION_URL_PARAM);
+    window.history.replaceState({}, '', url.toString());
+  }
+}
+
+// SQL Minification
+function minifySql(sql) {
+  return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+}
+
+// Connection Config Extraction
+function extractConnectionConfig(data) {
+  const result = data.result || {};
+  const ui = result.user_info || {};
+  let apiUrl, apiAuthKey;
+
+  if (result.key_value && typeof result.key_value === 'object') {
+    apiUrl = result.key_value['hosxp.api_url'];
+    apiAuthKey = result.key_value['hosxp.api_auth_key'];
+  }
+  if (!apiUrl) apiUrl = ui['hosxp.api_url'];
+  if (!apiAuthKey) apiAuthKey = ui['hosxp.api_auth_key'];
+  if (!apiUrl) apiUrl = ui.bms_url;
+  if (!apiAuthKey) apiAuthKey = ui.bms_session_code;
+  if (!apiAuthKey && typeof result.key_value === 'string') apiAuthKey = result.key_value;
+
+  return { apiUrl: (apiUrl || '').replace(/\/$/, ''), apiAuthKey: apiAuthKey || '' };
+}
+
+// Toast
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// Session Connect
+async function handleConnect() {
+  if (sessionConnected) { disconnectSession(); return; }
+
+  const sessionId = document.getElementById('sessionId').value.trim();
+  if (!sessionId) { showToast('err', 'Please enter a Session ID'); return; }
+
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  try {
+    const url = `https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sessionId)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      signal: controller.signal, mode: 'cors',
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+
+    if (!data || data.MessageCode !== 200) {
+      const errMsg = data?.MessageCode === 500 ? 'Session expired' : (data?.Message || 'Failed to validate');
+      showToast('err', errMsg);
+      btn.disabled = false;
+      btn.textContent = 'Connect';
+      return;
+    }
+
+    connectionConfig = extractConnectionConfig(data);
+    userInfo = data.result?.user_info || {};
+
+    if (!connectionConfig.apiUrl) {
+      showToast('err', 'No API URL found in session');
+      btn.disabled = false;
+      btn.textContent = 'Connect';
+      return;
+    }
+
+    sessionConnected = true;
+    btn.disabled = false;
+    btn.textContent = 'Disconnect';
+    btn.classList.add('connected');
+    document.getElementById('refreshBtn').disabled = false;
+
+    const infoBar = document.getElementById('userInfoBar');
+    infoBar.classList.add('connected');
+    infoBar.innerHTML = `<span class="user-name">${userInfo.name || 'Connected'}</span> <span>${userInfo.location || ''}</span>`;
+
+    setSessionCookie(sessionId);
+    showToast('ok', `Connected: ${userInfo.name || 'OK'} @ ${userInfo.location || ''}`);
+
+    fetchData();
+  } catch (e) {
+    const msg = e.name === 'AbortError' ? 'Connection timeout' : e.message;
+    showToast('err', msg);
+    btn.disabled = false;
+    btn.textContent = 'Connect';
+  }
+}
+
+function disconnectSession() {
+  sessionConnected = false;
+  connectionConfig = null;
+  userInfo = null;
+  allData = [];
+  filteredData = [];
+  removeSessionCookie();
+
+  const btn = document.getElementById('connectBtn');
+  btn.textContent = 'Connect';
+  btn.classList.remove('connected');
+  document.getElementById('refreshBtn').disabled = true;
+
+  const infoBar = document.getElementById('userInfoBar');
+  infoBar.classList.remove('connected');
+  infoBar.innerHTML = '<span id="userInfoText">Not connected</span>';
+
+  document.getElementById('tableArea').innerHTML = '<div class="empty-state">Connect to BMS Session to load lab price data</div>';
+  document.getElementById('statTotal').textContent = '-';
+  document.getElementById('statShowing').textContent = '-';
+  document.getElementById('statGroups').textContent = '-';
+  document.getElementById('statTime').textContent = '-';
+  document.getElementById('groupSelect').innerHTML = '<option value="all">All Groups</option>';
+  document.getElementById('searchInput').value = '';
+
+  showToast('info', 'Disconnected');
+}
+
+// Fetch Data
+async function fetchData() {
+  if (!sessionConnected || !connectionConfig) return;
+
+  const area = document.getElementById('tableArea');
+  area.innerHTML = '<div class="loading-state"><div class="spinner"></div>Loading lab price data...</div>';
+
+  const startTime = Date.now();
+
+  try {
+    const sql = minifySql(LAB_PRICE_SQL);
+    const url = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=BMS.LabPrice.Dashboard`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${connectionConfig.apiAuthKey}`, 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (res.status === 401) throw new Error('Unauthorized - Invalid API key');
+    if (res.status === 502) throw new Error('Bad Gateway - API tunnel issue');
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+    const apiRes = await res.json();
+    if (apiRes.MessageCode !== 200) throw new Error(apiRes.Message || 'Query failed');
+
+    const elapsed = Date.now() - startTime;
+    allData = apiRes.data || [];
+
+    updateStats(elapsed);
+    buildGroupFilter();
+    applyFilters();
+
+    showToast('ok', `Loaded ${allData.length} items in ${elapsed}ms`);
+  } catch (e) {
+    const msg = e.name === 'AbortError' ? 'Query timeout' : e.message;
+    area.innerHTML = `<div class="error-state"><div style="font-size:24px; margin-bottom:8px">Error</div><div class="error-msg">${escHtml(msg)}</div></div>`;
+    showToast('err', msg);
+  }
+}
+
+function updateStats(elapsed) {
+  document.getElementById('statTotal').textContent = allData.length.toLocaleString();
+  document.getElementById('statTime').textContent = elapsed + 'ms';
+
+  const groups = new Set();
+  allData.forEach(r => { if (r.lab_group != null) groups.add(String(r.lab_group)); });
+  document.getElementById('statGroups').textContent = groups.size;
+}
+
+function buildGroupFilter() {
+  const sel = document.getElementById('groupSelect');
+  const groups = new Map();
+  allData.forEach(r => {
+    const g = String(r.lab_group || '');
+    if (g && !groups.has(g)) groups.set(g, r.lab_items_group_name || g);
+  });
+
+  const sorted = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  sel.innerHTML = `<option value="all">All Groups (${allData.length})</option>`;
+  sorted.forEach(([code, name]) => {
+    const count = allData.filter(r => String(r.lab_group) === code).length;
+    sel.innerHTML += `<option value="${escHtml(code)}">${escHtml(name || code)} (${count})</option>`;
+  });
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const group = document.getElementById('groupSelect').value;
+
+  filteredData = allData.filter(r => {
+    const matchSearch = !search ||
+      String(r.name || '').toLowerCase().includes(search) ||
+      String(r.icode || '').toLowerCase().includes(search) ||
+      String(r.billcode || '').toLowerCase().includes(search);
+    const matchGroup = group === 'all' || String(r.lab_group) === group;
+    return matchSearch && matchGroup;
+  });
+
+  document.getElementById('statShowing').textContent = filteredData.length.toLocaleString();
+  renderTable();
+}
+
+function renderTable() {
+  if (filteredData.length === 0) {
+    document.getElementById('tableArea').innerHTML = '<div class="empty-state">No items match your filters</div>';
+    return;
+  }
+
+  // Build header
+  let pgHead1 = '', pgHead2 = '';
+  PRICE_GROUPS.forEach(pg => {
+    pgHead1 += `<th colspan="2" class="pg-${pg.cls}-h" style="text-align:center; border-bottom:2px solid currentColor">${pg.label}</th>`;
+    pgHead2 += `<th class="sub pg-${pg.cls}" style="text-align:right">Price</th><th class="sub pg-${pg.cls}" style="text-align:right">Inc</th>`;
+  });
+
+  let html = `<div class="table-wrap"><div class="table-scroll"><table>
+    <thead>
+      <tr>
+        <th>#</th><th>icode</th><th>Name</th><th>Billcode</th><th style="text-align:right">Base Price</th><th>Lab Group</th>
+        ${pgHead1}
+      </tr>
+      <tr>${pgHead2}</tr>
+    </thead><tbody>`;
+
+  let lastGroup = null;
+  filteredData.forEach((r, i) => {
+    const gKey = String(r.lab_group || '');
+    if (gKey !== lastGroup) {
+      lastGroup = gKey;
+      const colCount = 6 + PRICE_GROUPS.length * 2;
+      html += `<tr class="group-header"><td colspan="${colCount}">${escHtml(r.lab_items_group_name || gKey)}</td></tr>`;
+    }
+
+    html += `<tr>
+      <td style="color:var(--text-muted); font-size:11px">${i + 1}</td>
+      <td class="col-icode">${escHtml(r.icode)}</td>
+      <td class="col-name" title="${escHtml(r.name)}">${escHtml(r.name)}</td>
+      <td class="col-billcode">${escHtml(r.billcode || '')}</td>
+      <td class="col-price base">${fmtPrice(r.price)}</td>
+      <td class="col-group" title="${escHtml(r.lab_items_group_name || '')}">${escHtml(r.lab_items_group_name || String(r.lab_group || ''))}</td>`;
+
+    PRICE_GROUPS.forEach(pg => {
+      const p = r[pg.key + '_price'];
+      const inc = r[pg.key + '_price2'];
+      html += `<td class="col-price pg-${pg.cls} ${p > 0 ? 'price-' + pg.cls : 'zero'}">${fmtPrice(p)}</td>`;
+      html += `<td class="col-price pg-${pg.cls} ${inc > 0 ? 'price-' + pg.cls : 'zero'}" style="opacity:${inc > 0 ? '0.75' : '1'}">${fmtPrice(inc)}</td>`;
+    });
+
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  document.getElementById('tableArea').innerHTML = html;
+}
+
+// Helpers
+function fmtPrice(val) {
+  if (!val || val === 0) return '-';
+  return Number(val).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Init
+(function init() {
+  const urlId = getSessionFromUrl();
+  if (urlId) {
+    document.getElementById('sessionId').value = urlId;
+    setSessionCookie(urlId);
+    removeSessionFromUrl();
+    handleConnect();
+    return;
+  }
+  const cookieId = getSessionCookie();
+  if (cookieId) {
+    document.getElementById('sessionId').value = cookieId;
+    handleConnect();
+  }
+})();
+</script>
+</body>
+</html>

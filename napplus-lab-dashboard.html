@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAPPLUS LAB API Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --primary: #1f6feb;
+    --primary-glow: rgba(31,111,235,0.15);
+    --success: #3fb950;
+    --success-bg: rgba(63,185,80,0.1);
+    --error: #f85149;
+    --error-bg: rgba(248,81,73,0.1);
+    --warn: #d29922;
+    --warn-bg: rgba(210,153,34,0.1);
+    --accent: #58a6ff;
+    --teal: #39d353;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+    --pink: #f778ba;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-shield {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #e44d6e, #f778ba);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+  }
+  .header h1 span { color: var(--pink); }
+  .header-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+  }
+  .header-spacer { flex: 1; }
+  .conn-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    user-select: none;
+  }
+  .conn-badge.disconnected {
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .conn-badge.connected {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid rgba(63,185,80,0.3);
+  }
+  .conn-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Layout */
+  .layout {
+    display: flex;
+    height: calc(100vh - 56px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 300px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .field-group { margin-bottom: 8px; }
+  .field-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .field-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
+  .field-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .field-input[readonly] {
+    background: var(--surface2);
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  .connect-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--pink);
+    background: rgba(247,120,186,0.1);
+    color: var(--pink);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+    transition: all 0.15s;
+  }
+  .connect-btn:hover { background: var(--pink); color: #fff; }
+  .connect-btn.connected {
+    border-color: var(--error);
+    background: var(--error-bg);
+    color: var(--error);
+  }
+  .connect-btn.connected:hover { background: rgba(248,81,73,0.2); }
+  .connect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* API selector */
+  .api-tabs { display: flex; flex-direction: column; gap: 3px; }
+  .api-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .api-tab:hover { background: var(--surface2); border-color: var(--border); }
+  .api-tab.active { background: var(--primary-glow); border-color: var(--primary); }
+  .api-tab-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .api-tab-icon.get { background: var(--success-bg); color: var(--success); }
+  .api-tab-icon.set { background: var(--warn-bg); color: var(--warn); }
+  .api-tab-info { min-width: 0; }
+  .api-tab-name { font-size: 12px; font-weight: 700; }
+  .api-tab-desc { font-size: 10px; color: var(--text-muted); }
+  .api-tab-method {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .api-tab-method.post { background: var(--warn-bg); color: var(--warn); }
+
+  /* Lab Type selector */
+  .lab-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .lab-type-btn {
+    padding: 6px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+    text-align: left;
+  }
+  .lab-type-btn:hover { border-color: var(--text-muted); color: var(--text); }
+  .lab-type-btn.active {
+    background: var(--primary-glow);
+    border-color: var(--primary);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .lab-type-btn .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  /* History */
+  .history-list { max-height: 180px; overflow-y: auto; }
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 11px;
+  }
+  .history-item:hover { background: var(--surface2); }
+  .history-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .history-badge.ok { background: var(--success-bg); color: var(--success); }
+  .history-badge.err { background: var(--error-bg); color: var(--error); }
+  .history-api {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    flex: 1;
+  }
+  .history-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Request panel */
+  .request-panel {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .method-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px solid rgba(210,153,34,0.2);
+  }
+  .endpoint-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 4px 10px;
+    border-radius: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 600px;
+  }
+  .endpoint-display span { color: var(--accent); }
+
+  /* JSON Editor */
+  .json-editor-wrap { position: relative; margin-bottom: 10px; }
+  .json-editor {
+    width: 100%;
+    min-height: 160px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.15s;
+    tab-size: 2;
+  }
+  .json-editor:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .toolbar-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toolbar-info .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .toolbar-btn {
+    padding: 5px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .toolbar-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .run-btn {
+    margin-left: auto;
+    padding: 8px 24px;
+    background: linear-gradient(135deg, #e44d6e, #f778ba);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .run-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(228,77,110,0.4); }
+  .run-btn:active { transform: translateY(0); }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .run-btn.loading { opacity: 0.7; cursor: not-allowed; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
+
+  /* Response panel */
+  .response-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 16px 20px;
+  }
+  .response-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+  .resp-tab {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .resp-tab:hover { color: var(--text); }
+  .resp-tab.active { color: var(--pink); border-bottom-color: var(--pink); }
+  .resp-tab .count {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  .response-content {
+    flex: 1;
+    overflow-y: auto;
+    display: none;
+  }
+  .response-content.active { display: block; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.3; }
+  .empty-title { font-size: 16px; font-weight: 700; }
+  .empty-sub { font-size: 13px; max-width: 400px; line-height: 1.7; }
+
+  /* Result meta */
+  .result-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    flex-wrap: wrap;
+  }
+  .meta-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 700;
+  }
+  .meta-status.ok { color: var(--success); }
+  .meta-status.err { color: var(--error); }
+  .meta-divider { color: var(--border); }
+  .meta-item { color: var(--text-muted); }
+  .meta-item span { color: var(--text); }
+
+  /* Table */
+  .table-wrap {
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: calc(100% - 40px);
+  }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .result-table th {
+    background: var(--surface);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  .result-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    color: var(--text);
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table tr:hover td { background: var(--surface2); }
+  .null-val { color: var(--text-muted); font-style: italic; }
+  .num-val { color: var(--teal); }
+  .str-val { color: var(--orange); }
+
+  /* JSON view */
+  .json-view {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    overflow: auto;
+    max-height: calc(100% - 40px);
+    white-space: pre;
+    line-height: 1.7;
+  }
+  .json-key { color: var(--accent); }
+  .json-string { color: var(--orange); }
+  .json-number { color: var(--teal); }
+  .json-bool { color: var(--purple); }
+  .json-null { color: var(--text-muted); font-style: italic; }
+
+  /* Request view */
+  .request-view {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 100%;
+  }
+  .req-block {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .req-block:last-child { border-bottom: none; }
+  .req-block-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .req-block-content {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* Error view */
+  .error-view {
+    background: var(--error-bg);
+    border: 1px solid rgba(248,81,73,0.3);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 16px;
+  }
+  .error-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--error);
+    margin-bottom: 6px;
+  }
+  .error-msg { color: var(--text); font-size: 14px; margin-bottom: 12px; }
+  .error-detail {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 10px;
+    border-radius: 6px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  /* Workflow panel */
+  .workflow-panel {
+    background: rgba(247,120,186,0.05);
+    border: 1px solid rgba(247,120,186,0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .workflow-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pink);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .workflow-steps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .workflow-step {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .workflow-step.active {
+    background: rgba(247,120,186,0.15);
+    color: var(--pink);
+    border-color: rgba(247,120,186,0.3);
+    font-weight: 600;
+  }
+  .workflow-arrow { color: var(--text-muted); font-size: 10px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Toast */
+  .toast-wrap {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 9999;
+  }
+  .toast {
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    animation: slideIn 0.2s ease;
+    max-width: 360px;
+  }
+  .toast.ok { background: var(--success-bg); border: 1px solid var(--success); color: var(--success); }
+  .toast.err { background: var(--error-bg); border: 1px solid var(--error); color: var(--error); }
+  .toast.info { background: var(--primary-glow); border: 1px solid var(--primary); color: var(--accent); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Lab type tag */
+  .lab-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .lab-tag.hiv { background: rgba(248,81,73,0.15); color: var(--error); }
+  .lab-tag.pcr { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .lab-tag.cd4 { background: rgba(31,111,235,0.15); color: var(--accent); }
+  .lab-tag.vl { background: rgba(57,211,83,0.15); color: var(--teal); }
+  .lab-tag.dr { background: rgba(210,153,34,0.15); color: var(--warn); }
+  .lab-tag.bc { background: rgba(255,166,87,0.15); color: var(--orange); }
+
+  /* Quick date */
+  .quick-dates { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .quick-date {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .quick-date:hover { border-color: var(--pink); color: var(--pink); }
+
+  /* Session */
+  .session-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    resize: none;
+    transition: border-color 0.15s;
+  }
+  .session-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+  }
+  .session-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 11px;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .status-dot.ok { background: var(--success); }
+  .status-dot.err { background: var(--error); }
+  .user-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    background: var(--success-bg);
+    border: 1px solid rgba(63,185,80,0.2);
+    border-radius: 6px;
+    margin-top: 8px;
+  }
+  .user-info-bar .user-name { color: var(--success); font-weight: 600; }
+  .user-info-bar .user-location { color: var(--text-muted); }
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 8px 0;
+  }
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-shield">N+</div>
+    <h1><span>NAPPLUS</span> LAB API</h1>
+  </div>
+  <span class="header-subtitle">Dashboard v1.0</span>
+  <div class="header-spacer"></div>
+  <div id="headerUserInfo" style="display:none; font-size:11px; color:var(--text-muted); padding:4px 10px; background:var(--success-bg); border:1px solid rgba(63,185,80,0.2); border-radius:6px;">
+    <span id="headerUserName" style="color:var(--success); font-weight:600"></span>
+    <span id="headerUserLoc" style="color:var(--text-muted); margin-left:6px"></span>
+  </div>
+  <div class="conn-badge disconnected" id="connBadge">
+    <div class="conn-dot"></div>
+    <span id="connText">Not Connected</span>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- BMS Session -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">BMS Session</div>
+      <div class="field-group">
+        <div class="field-label">BMS Session ID</div>
+        <textarea class="session-input" id="sessionId" rows="2"
+          placeholder="CB411DB0-B121-43C6-B795-80ADECE6A13C"></textarea>
+        <div class="session-status">
+          <div class="status-dot" id="sessionDot"></div>
+          <span id="sessionStatusTxt" style="color:var(--text-muted)">No Session ID</span>
+        </div>
+      </div>
+      <button class="connect-btn" id="sessionConnectBtn" onclick="handleSessionConnect()">
+        Connect Session
+      </button>
+      <div id="sessionUserInfo" style="display:none"></div>
+    </div>
+
+    <!-- NAPPLUS Credentials -->
+    <div class="sidebar-section" id="napplusCredSection">
+      <div class="sidebar-label">NAPPLUS Credentials</div>
+      <div class="field-group">
+        <div class="field-label">HCODE (Hospital Code)</div>
+        <input class="field-input" id="hcode" placeholder="13777" maxlength="5">
+      </div>
+      <div class="field-group">
+        <div class="field-label">UserName (auto: LAB + HCODE)</div>
+        <input class="field-input" id="username" placeholder="LAB13777" readonly>
+      </div>
+      <div class="field-group">
+        <div class="field-label">NAPPLUS API Key (Token)</div>
+        <input class="field-input" id="apiKey" type="password" placeholder="Token from NAPPLUS Gen Key">
+      </div>
+      <button class="connect-btn" id="connectBtn" onclick="handleConnect()">Connect NAPPLUS</button>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-label">API Endpoints</div>
+      <div class="api-tabs" id="apiTabs">
+        <button class="api-tab active" onclick="selectApi(0, this)">
+          <div class="api-tab-icon get">GET</div>
+          <div class="api-tab-info">
+            <div class="api-tab-name">get_lab_request</div>
+            <div class="api-tab-desc">ดึงข้อมูลรายการส่งตรวจ</div>
+          </div>
+          <span class="api-tab-method post">POST</span>
+        </button>
+        <button class="api-tab" onclick="selectApi(1, this)">
+          <div class="api-tab-icon set">SET</div>
+          <div class="api-tab-info">
+            <div class="api-tab-name">set_lab_result</div>
+            <div class="api-tab-desc">บันทึกผลการตรวจ</div>
+          </div>
+          <span class="api-tab-method post">POST</span>
+        </button>
+        <button class="api-tab" onclick="selectApi(2, this)">
+          <div class="api-tab-icon get">GET</div>
+          <div class="api-tab-info">
+            <div class="api-tab-name">get_lab_result</div>
+            <div class="api-tab-desc">ดึงผลการตรวจ</div>
+          </div>
+          <span class="api-tab-method post">POST</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lab Type -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Lab Type</div>
+      <div class="lab-type-grid" id="labTypeGrid">
+        <button class="lab-type-btn active" onclick="selectLabType('101', this)">ANTIHIV <span class="code">101</span></button>
+        <button class="lab-type-btn" onclick="selectLabType('102', this)">PCR <span class="code">102</span></button>
+        <button class="lab-type-btn" onclick="selectLabType('201', this)">CD4 <span class="code">201</span></button>
+        <button class="lab-type-btn" onclick="selectLabType('202', this)">Viral Load <span class="code">202</span></button>
+        <button class="lab-type-btn" onclick="selectLabType('203', this)">Drug Resist <span class="code">203</span></button>
+        <button class="lab-type-btn" onclick="selectLabType('204', this)">Blood Chem <span class="code">204</span></button>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="display:flex; justify-content:space-between">
+        History
+        <button onclick="clearHistory()" style="background:none; border:none; color:var(--text-muted); font-size:10px; cursor:pointer">Clear</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <div style="font-size:11px; color:var(--text-muted); text-align:center; padding:8px">No history</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Workflow -->
+    <div style="padding:12px 20px 0">
+      <div class="workflow-panel">
+        <div class="workflow-title">NAPPLUS Lab Workflow</div>
+        <div class="workflow-steps">
+          <span class="workflow-step" id="wf1">1. บันทึกส่งตรวจ (NAPPLUS)</span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-step active" id="wf2">2. get_lab_request</span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-step" id="wf3">3. set_lab_result</span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-step" id="wf4">4. get_lab_result</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request -->
+    <div class="request-panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="method-badge">POST</span>
+          <span id="apiName">get_lab_request</span>
+        </div>
+        <div class="endpoint-display">
+          <span id="endpointUrl">https://dmis.nhso.go.th/NAPPLUSLABAPI/api/get_lab_request</span>
+        </div>
+      </div>
+
+      <div class="json-editor-wrap">
+        <textarea class="json-editor" id="jsonEditor" spellcheck="false"></textarea>
+      </div>
+
+      <div class="toolbar">
+        <div class="toolbar-info">
+          <span class="lab-tag hiv" id="labTypeTag">101 ANTIHIV</span>
+          <span class="dot"></span>
+          <span>Content-Type: application/json</span>
+        </div>
+        <button class="toolbar-btn" onclick="formatJson()">Format JSON</button>
+        <button class="toolbar-btn" onclick="resetToTemplate()">Reset Template</button>
+        <button class="run-btn" id="runBtn" onclick="sendRequest()" disabled>
+          <span id="runBtnText">Send Request</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Response -->
+    <div class="response-panel">
+      <div class="response-tabs">
+        <button class="resp-tab active" onclick="showTab('table', this)">Table <span class="count" id="countBadge">0</span></button>
+        <button class="resp-tab" onclick="showTab('json', this)">{ } JSON</button>
+        <button class="resp-tab" onclick="showTab('request', this)">Request</button>
+      </div>
+
+      <div class="response-content active" id="tab-table">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">N+</div>
+          <div class="empty-title">NAPPLUS LAB API Dashboard</div>
+          <div class="empty-sub">
+            ระบบเชื่อมต่อข้อมูลระหว่างสารสนเทศของหน่วยบริการ<br>
+            และระบบบันทึกข้อมูลการให้บริการผู้ติดเชื้อ/ผู้ป่วยเอดส์แห่งชาติ<br><br>
+            1. กรอก BMS Session ID แล้วกด Connect Session<br>
+            2. กรอก NAPPLUS API Key (Token) แล้วกด Connect NAPPLUS<br>
+            3. เลือก API Endpoint และ Lab Type แล้วส่ง Request
+          </div>
+        </div>
+        <div id="tableResult" style="display:none; height:100%"></div>
+      </div>
+
+      <div class="response-content" id="tab-json">
+        <div class="empty-state">
+          <div class="empty-icon">{ }</div>
+          <div class="empty-title">Waiting for response</div>
+          <div class="empty-sub">No JSON data yet</div>
+        </div>
+      </div>
+
+      <div class="response-content" id="tab-request">
+        <div class="empty-state">
+          <div class="empty-icon">&gt;</div>
+          <div class="empty-title">Waiting for request</div>
+          <div class="empty-sub">No request sent yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// == State ==
+const BASE_URL = 'https://dmis.nhso.go.th/NAPPLUSLABAPI/api';
+const TIMEOUT = 30000;
+const SESSION_COOKIE_NAME = 'bms-session-id';
+const SESSION_COOKIE_DAYS = 7;
+const SESSION_URL_PARAM = 'bms-session-id';
+const SESSION_TIMEOUT = 10000;
+
+let connected = false;
+let sessionConnected = false;
+let sessionData = null;
+let userInfo = null;
+let currentApi = 0; // 0=get_lab_request, 1=set_lab_result, 2=get_lab_result
+let currentLabType = '101';
+let history = [];
+let lastRequest = null;
+let lastResponse = null;
+
+const API_ENDPOINTS = [
+  { name: 'get_lab_request', path: '/get_lab_request', desc: 'ดึงข้อมูลรายการส่งตรวจ' },
+  { name: 'set_lab_result',  path: '/set_lab_result',  desc: 'บันทึกผลการตรวจ' },
+  { name: 'get_lab_result',  path: '/get_lab_result',  desc: 'ดึงผลการตรวจ' },
+];
+
+const LAB_TYPES = {
+  '101': { name: 'ANTIHIV', cls: 'hiv' },
+  '102': { name: 'PCR', cls: 'pcr' },
+  '201': { name: 'CD4', cls: 'cd4' },
+  '202': { name: 'Viral Load', cls: 'vl' },
+  '203': { name: 'Drug Resistance', cls: 'dr' },
+  '204': { name: 'Blood Chemistry', cls: 'bc' },
+};
+
+// == Helpers ==
+function getTodayBE() {
+  const d = new Date();
+  const y = d.getFullYear() + 543;
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${dd}`;
+}
+
+function getMonthAgoBE() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  const y = d.getFullYear() + 543;
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${dd}`;
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// == Templates ==
+function getTemplate(apiIndex) {
+  const hcode = document.getElementById('hcode').value.trim() || 'XXXXX';
+  const today = getTodayBE();
+  const monthAgo = getMonthAgoBE();
+
+  if (apiIndex === 0) {
+    // get_lab_request
+    return JSON.stringify({
+      HEADER: {
+        HCODE_REQUEST: hcode,
+        HCODE_LAB: hcode,
+        LAB_TYPE: currentLabType,
+        PATIENT_ID: "",
+        LAB_REQUEST_ID: "",
+        REQUEST_DATE_FROM: monthAgo,
+        REQUEST_DATE_TO: today,
+        LAB_STATUS: "0"
+      }
+    }, null, 2);
+  } else if (apiIndex === 1) {
+    // set_lab_result
+    const testResult = getTestResultTemplate(currentLabType);
+    return JSON.stringify({
+      HEADER: {
+        HCODE_LAB: hcode,
+        LAB_TYPE: currentLabType,
+        RESULT_DATE_FROM: monthAgo,
+        RESULT_DATE_TO: today
+      },
+      LAB_RESULT: [
+        {
+          LAB_TYPE: currentLabType,
+          LAB_REQUEST_ID: "",
+          RESULT_DATE: today,
+          HCODE_LAB: hcode,
+          HCODE_LAB_OTHER: "",
+          IS_DETECTED: "1",
+          TEST_RESULT: testResult,
+          REMARK_NODETECTED: "",
+          LAB_ITEM: currentLabType === '204' ? 'WBC' : ''
+        }
+      ]
+    }, null, 2);
+  } else {
+    // get_lab_result
+    return JSON.stringify({
+      HEADER: {
+        HCODE_LAB: hcode,
+        LAB_TYPE: currentLabType,
+        LAB_REQUEST_ID: "",
+        RESULT_DATE_FROM: monthAgo,
+        RESULT_DATE_TO: today,
+        LAB_STATUS: "1"
+      }
+    }, null, 2);
+  }
+}
+
+function getTestResultTemplate(labType) {
+  switch (labType) {
+    case '101': return { Result1: "Positive" };
+    case '102': return { Result1: "Positive" };
+    case '201': return { Result1: "20.0", Result2: "350" };
+    case '202': return { Result1: "<", Result2: "50", Result3: "copies/ml" };
+    case '203': return { Result1: "Positive" };
+    case '204': return { WBC: "4500", Hb: "12.5", Cr: "7.5", Chol: "250", FBS: "125", TG: "150", "SGPT(ALT)": "35" };
+    default: return {};
+  }
+}
+
+// == Cookie Management ==
+function setSessionCookie(sessionId) {
+  const expires = new Date(Date.now() + SESSION_COOKIE_DAYS * 864e5).toUTCString();
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; expires=${expires}; path=/${secure}; SameSite=Lax`;
+}
+
+function getSessionCookie() {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + SESSION_COOKIE_NAME + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function removeSessionCookie() {
+  document.cookie = `${SESSION_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
+// == URL Session Handling ==
+function getSessionFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get(SESSION_URL_PARAM);
+  return sessionId && sessionId.trim() ? sessionId.trim() : null;
+}
+
+function removeSessionFromUrl() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has(SESSION_URL_PARAM)) {
+    url.searchParams.delete(SESSION_URL_PARAM);
+    window.history.replaceState({}, '', url.toString());
+  }
+}
+
+// == Session Validation ==
+async function validateSession(sessionId) {
+  try {
+    const url = `https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sessionId)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SESSION_TIMEOUT);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      signal: controller.signal,
+      mode: 'cors',
+    });
+
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      return { MessageCode: res.status, Message: `HTTP ${res.status}: ${res.statusText}` };
+    }
+    return await res.json();
+  } catch (e) {
+    const isTimeout = e.name === 'AbortError';
+    return {
+      MessageCode: 0,
+      Message: isTimeout ? 'Timeout' : 'Connection Error',
+      error: isTimeout ? 'Session retrieval timeout' : 'Network Error',
+      detail: e.message
+    };
+  }
+}
+
+// == Session Connect/Disconnect ==
+async function handleSessionConnect() {
+  if (sessionConnected) {
+    disconnectSession();
+    return;
+  }
+
+  const sessionId = document.getElementById('sessionId').value.trim();
+  if (!sessionId) {
+    showToast('err', 'กรุณาระบุ BMS Session ID');
+    return;
+  }
+
+  const btn = document.getElementById('sessionConnectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  sessionData = await validateSession(sessionId);
+  btn.disabled = false;
+
+  if (!sessionData || sessionData.MessageCode !== 200) {
+    const errMsg = sessionData?.MessageCode === 500
+      ? 'Session expired - please re-login to HOSxP'
+      : sessionData?.Message || 'Failed to validate session';
+    showToast('err', errMsg);
+    btn.textContent = 'Connect Session';
+    sessionData = null;
+    return;
+  }
+
+  // Extract user info
+  const result = sessionData.result || {};
+  userInfo = result.user_info || {};
+
+  // Extract HCODE from user info if available
+  const hcodeFromSession = userInfo.hcode || userInfo.hospital_code || userInfo.hospcode || '';
+
+  // Update session state
+  sessionConnected = true;
+  setSessionCookie(sessionId);
+
+  // Update UI
+  btn.textContent = 'Disconnect Session';
+  btn.classList.add('connected');
+
+  // Show user info below session button
+  const userInfoDiv = document.getElementById('sessionUserInfo');
+  userInfoDiv.style.display = 'block';
+  userInfoDiv.innerHTML = `
+    <div class="user-info-bar">
+      <span class="user-name">${escHtml(userInfo.name || 'Unknown')}</span>
+      <span class="user-location">${escHtml(userInfo.location || '')}</span>
+    </div>
+  `;
+
+  // Update header user info
+  const headerUI = document.getElementById('headerUserInfo');
+  headerUI.style.display = 'flex';
+  document.getElementById('headerUserName').textContent = userInfo.name || 'Connected';
+  document.getElementById('headerUserLoc').textContent = userInfo.location || '';
+
+  // Auto-fill HCODE if found
+  if (hcodeFromSession) {
+    document.getElementById('hcode').value = hcodeFromSession;
+    document.getElementById('username').value = `LAB${hcodeFromSession}`;
+  }
+
+  // Update session status
+  document.getElementById('sessionDot').className = 'status-dot ok';
+  document.getElementById('sessionStatusTxt').textContent = 'Session Active';
+  document.getElementById('sessionStatusTxt').style.color = 'var(--success)';
+
+  showToast('ok', `Session Connected: ${userInfo.name || 'OK'} @ ${userInfo.location || ''}`);
+}
+
+function disconnectSession() {
+  sessionConnected = false;
+  sessionData = null;
+  userInfo = null;
+  removeSessionCookie();
+
+  // Also disconnect NAPPLUS if connected
+  if (connected) disconnect();
+
+  const btn = document.getElementById('sessionConnectBtn');
+  btn.textContent = 'Connect Session';
+  btn.classList.remove('connected');
+
+  document.getElementById('sessionUserInfo').style.display = 'none';
+  document.getElementById('headerUserInfo').style.display = 'none';
+
+  document.getElementById('sessionDot').className = 'status-dot';
+  document.getElementById('sessionStatusTxt').textContent = 'No Session ID';
+  document.getElementById('sessionStatusTxt').style.color = 'var(--text-muted)';
+
+  showToast('info', 'Session disconnected');
+}
+
+function updateSessionStatus() {
+  const val = document.getElementById('sessionId').value.trim();
+  const dot = document.getElementById('sessionDot');
+  const txt = document.getElementById('sessionStatusTxt');
+  const guidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (!val) {
+    dot.className = 'status-dot';
+    txt.textContent = 'No Session ID';
+    txt.style.color = 'var(--text-muted)';
+  } else if (guidPattern.test(val)) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Valid GUID format';
+    txt.style.color = 'var(--success)';
+  } else {
+    dot.className = 'status-dot err';
+    txt.textContent = 'Invalid format (must be GUID)';
+    txt.style.color = 'var(--error)';
+  }
+}
+
+// == Init ==
+function init() {
+  // HCODE auto-fill username
+  document.getElementById('hcode').addEventListener('input', function() {
+    const hcode = this.value.trim();
+    document.getElementById('username').value = hcode ? `LAB${hcode}` : '';
+  });
+
+  // Session ID watcher
+  document.getElementById('sessionId').addEventListener('input', updateSessionStatus);
+
+  // Priority 1: URL parameter ?bms-session-id=XXX
+  const urlSessionId = getSessionFromUrl();
+  if (urlSessionId) {
+    document.getElementById('sessionId').value = urlSessionId;
+    updateSessionStatus();
+    setSessionCookie(urlSessionId);
+    removeSessionFromUrl();
+    handleSessionConnect();
+    return;
+  }
+
+  // Priority 2: Cookie storage
+  const cookieSessionId = getSessionCookie();
+  if (cookieSessionId) {
+    document.getElementById('sessionId').value = cookieSessionId;
+    updateSessionStatus();
+    handleSessionConnect();
+    return;
+  }
+
+  resetToTemplate();
+}
+
+function resetToTemplate() {
+  document.getElementById('jsonEditor').value = getTemplate(currentApi);
+}
+
+// == NAPPLUS Connection ==
+function handleConnect() {
+  if (connected) {
+    disconnect();
+    return;
+  }
+
+  const hcode = document.getElementById('hcode').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+  if (!hcode) { showToast('err', 'กรุณาระบุ HCODE'); return; }
+  if (hcode.length !== 5) { showToast('err', 'HCODE ต้องเป็น 5 หลัก'); return; }
+  if (!apiKey) { showToast('err', 'กรุณาระบุ NAPPLUS API Key (Token)'); return; }
+
+  connected = true;
+  document.getElementById('connectBtn').textContent = 'Disconnect NAPPLUS';
+  document.getElementById('connectBtn').classList.add('connected');
+  document.getElementById('runBtn').disabled = false;
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge connected';
+  const userName = userInfo?.name || `LAB${hcode}`;
+  document.getElementById('connText').textContent = `LAB${hcode}`;
+
+  document.getElementById('username').value = `LAB${hcode}`;
+
+  showToast('ok', `NAPPLUS Connected: LAB${hcode}`);
+  resetToTemplate();
+}
+
+function disconnect() {
+  connected = false;
+  document.getElementById('connectBtn').textContent = 'Connect NAPPLUS';
+  document.getElementById('connectBtn').classList.remove('connected');
+  document.getElementById('runBtn').disabled = true;
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge disconnected';
+  document.getElementById('connText').textContent = sessionConnected ? 'Session Only' : 'Not Connected';
+
+  showToast('info', 'NAPPLUS Disconnected');
+}
+
+// == API Selection ==
+function selectApi(index, el) {
+  currentApi = index;
+  document.querySelectorAll('.api-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const api = API_ENDPOINTS[index];
+  document.getElementById('apiName').textContent = api.name;
+  document.getElementById('endpointUrl').textContent = BASE_URL + api.path;
+
+  // Update workflow highlights
+  document.querySelectorAll('.workflow-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`wf${index + 2}`).classList.add('active');
+
+  resetToTemplate();
+}
+
+function selectLabType(type, el) {
+  currentLabType = type;
+  document.querySelectorAll('.lab-type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+
+  const lt = LAB_TYPES[type];
+  const tag = document.getElementById('labTypeTag');
+  tag.textContent = `${type} ${lt.name}`;
+  tag.className = `lab-tag ${lt.cls}`;
+
+  resetToTemplate();
+}
+
+// == JSON Tools ==
+function formatJson() {
+  const editor = document.getElementById('jsonEditor');
+  try {
+    const parsed = JSON.parse(editor.value);
+    editor.value = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    showToast('err', 'Invalid JSON: ' + e.message);
+  }
+}
+
+// == Send Request ==
+async function sendRequest() {
+  if (!connected) {
+    showToast('err', 'กรุณา Connect ก่อน');
+    return;
+  }
+
+  const editor = document.getElementById('jsonEditor');
+  let body;
+  try {
+    body = JSON.parse(editor.value);
+  } catch (e) {
+    showToast('err', 'Invalid JSON: ' + e.message);
+    return;
+  }
+
+  const api = API_ENDPOINTS[currentApi];
+  const url = BASE_URL + api.path;
+  const username = document.getElementById('username').value;
+  const apiKey = document.getElementById('apiKey').value.trim();
+
+  const btn = document.getElementById('runBtn');
+  const btnText = document.getElementById('runBtnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner">&#8635;</span> Sending...';
+
+  lastRequest = {
+    method: 'POST',
+    url: url,
+    headers: {
+      'UserName': username,
+      'Password': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: body
+  };
+
+  let response;
+  const startTime = Date.now();
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'UserName': username,
+        'Password': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok && res.status === 401) {
+      response = {
+        RESULT: '0',
+        RESULT_MESSAGE: 'Unauthorized - API Key ไม่ถูกต้องหรือหมดอายุ',
+        _http_status: 401
+      };
+    } else {
+      response = await res.json();
+      response._http_status = res.status;
+    }
+  } catch (e) {
+    const isTimeout = e.name === 'AbortError';
+    response = {
+      RESULT: '0',
+      RESULT_MESSAGE: isTimeout
+        ? `Request timeout after ${TIMEOUT/1000}s`
+        : `Connection Error: ${e.message}`,
+      _http_status: 0
+    };
+  }
+
+  const elapsed = Date.now() - startTime;
+  response._elapsed = elapsed;
+
+  lastResponse = response;
+  btn.disabled = false;
+  btnText.textContent = 'Send Request';
+
+  // Add to history
+  addHistory(api.name, response, elapsed);
+
+  // Render
+  renderResult(response, api.name);
+  renderJsonTab(response);
+  renderRequestTab(lastRequest);
+
+  const isOk = response.RESULT === '1' || response.RESULT === 1;
+  showToast(
+    isOk ? 'ok' : 'err',
+    isOk
+      ? `Success (${elapsed}ms) - ${api.name}`
+      : `Error: ${response.RESULT_MESSAGE || 'Unknown error'}`
+  );
+}
+
+// == Render Results ==
+function renderResult(resp, apiName) {
+  const tableDiv = document.getElementById('tableResult');
+  const emptyState = document.getElementById('emptyState');
+  const countBadge = document.getElementById('countBadge');
+
+  const isOk = resp.RESULT === '1' || resp.RESULT === 1;
+  const dataKey = apiName === 'get_lab_request' ? 'LAB_REQUEST'
+                : apiName === 'set_lab_result' ? 'LAB_RESULT_ERROR'
+                : 'LAB_RESULT';
+  const data = resp[dataKey] || [];
+  const rowCount = Array.isArray(data) ? data.length : 0;
+
+  countBadge.textContent = isOk ? rowCount : '!';
+
+  emptyState.style.display = 'none';
+  tableDiv.style.display = 'block';
+  tableDiv.innerHTML = '';
+
+  // Meta bar
+  const meta = document.createElement('div');
+  meta.className = 'result-meta';
+  meta.innerHTML = `
+    <div class="meta-status ${isOk ? 'ok' : 'err'}">
+      ${isOk ? 'SUCCESS' : 'ERROR'} ${resp._http_status || ''}
+    </div>
+    <span class="meta-divider">|</span>
+    <span class="meta-item">API: <span>${escHtml(apiName)}</span></span>
+    <span class="meta-divider">|</span>
+    <span class="meta-item">Result: <span>${escHtml(resp.RESULT_MESSAGE || '')}</span></span>
+    ${isOk && rowCount > 0 ? `<span class="meta-divider">|</span><span class="meta-item">Rows: <span>${rowCount}</span></span>` : ''}
+    <span class="meta-divider">|</span>
+    <span class="meta-item">Time: <span>${resp._elapsed || 0}ms</span></span>
+  `;
+  tableDiv.appendChild(meta);
+
+  if (!isOk) {
+    const errDiv = document.createElement('div');
+    errDiv.className = 'error-view';
+    errDiv.innerHTML = `
+      <div class="error-code">RESULT: ${escHtml(String(resp.RESULT))}</div>
+      <div class="error-msg">${escHtml(resp.RESULT_MESSAGE || 'An error occurred')}</div>
+      ${resp.LAB_RESULT_ERROR && resp.LAB_RESULT_ERROR.length > 0 ? `
+        <div class="error-detail">${escHtml(JSON.stringify(resp.LAB_RESULT_ERROR, null, 2))}</div>
+      ` : ''}
+    `;
+    tableDiv.appendChild(errDiv);
+    return;
+  }
+
+  if (!Array.isArray(data) || data.length === 0) {
+    const noData = document.createElement('div');
+    noData.style.cssText = 'padding:24px; text-align:center; color:var(--text-muted); font-size:13px; background:var(--surface2); border:1px solid var(--border); border-top:none; border-radius:0 0 8px 8px;';
+    noData.textContent = apiName === 'set_lab_result'
+      ? 'บันทึกผลสำเร็จ - ไม่มีรายการ Error'
+      : 'ไม่พบข้อมูล (0 records)';
+    tableDiv.appendChild(noData);
+    return;
+  }
+
+  // Table
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap';
+  const table = document.createElement('table');
+  table.className = 'result-table';
+
+  // Get all unique fields
+  const fields = [];
+  data.forEach(row => {
+    Object.keys(row).forEach(k => {
+      if (!fields.includes(k)) fields.push(k);
+    });
+  });
+
+  // Header
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr>${fields.map(f => `<th>${escHtml(f)}</th>`).join('')}</tr>`;
+  table.appendChild(thead);
+
+  // Body
+  const tbody = document.createElement('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    fields.forEach(f => {
+      const td = document.createElement('td');
+      const val = row[f];
+      if (val === null || val === undefined || val === '') {
+        td.innerHTML = '<span class="null-val">-</span>';
+      } else if (typeof val === 'object') {
+        td.textContent = JSON.stringify(val);
+        td.style.color = 'var(--purple)';
+        td.title = JSON.stringify(val, null, 2);
+      } else if (typeof val === 'number') {
+        td.innerHTML = `<span class="num-val">${val}</span>`;
+      } else {
+        td.textContent = val;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  tableDiv.appendChild(wrap);
+}
+
+function renderJsonTab(resp) {
+  const tab = document.getElementById('tab-json');
+  tab.innerHTML = '';
+  const meta = document.createElement('div');
+  meta.className = 'result-meta';
+  const isOk = resp.RESULT === '1' || resp.RESULT === 1;
+  meta.innerHTML = `<div class="meta-status ${isOk ? 'ok' : 'err'}">${isOk ? 'SUCCESS' : 'ERROR'} - JSON Response</div>`;
+  tab.appendChild(meta);
+  const json = document.createElement('div');
+  json.className = 'json-view';
+  // Remove internal fields before display
+  const display = { ...resp };
+  delete display._http_status;
+  delete display._elapsed;
+  json.innerHTML = syntaxHighlight(JSON.stringify(display, null, 2));
+  tab.appendChild(json);
+}
+
+function renderRequestTab(req) {
+  const tab = document.getElementById('tab-request');
+  tab.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.className = 'request-view';
+  wrap.innerHTML = `
+    <div class="req-block">
+      <div class="req-block-title">HTTP Request</div>
+      <div class="req-block-content" style="color:var(--warn)">POST ${escHtml(req.url)}</div>
+    </div>
+    <div class="req-block">
+      <div class="req-block-title">Headers</div>
+      <div class="req-block-content">${Object.entries(req.headers).map(([k,v]) =>
+        `<span style="color:var(--accent)">${escHtml(k)}:</span> ${k === 'Password' ? '***' + v.slice(-8) : escHtml(v)}`
+      ).join('\n')}</div>
+    </div>
+    <div class="req-block">
+      <div class="req-block-title">Request Body (JSON)</div>
+      <div class="req-block-content">${syntaxHighlight(JSON.stringify(req.body, null, 2))}</div>
+    </div>
+  `;
+  tab.appendChild(wrap);
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+      let cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) cls = 'json-key';
+        else cls = 'json-string';
+      } else if (/true|false/.test(match)) cls = 'json-bool';
+      else if (/null/.test(match)) cls = 'json-null';
+      return `<span class="${cls}">${match}</span>`;
+    });
+}
+
+// == Tabs ==
+function showTab(name, el) {
+  document.querySelectorAll('.resp-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.response-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// == History ==
+function addHistory(apiName, resp, elapsed) {
+  const isOk = resp.RESULT === '1' || resp.RESULT === 1;
+  history.unshift({
+    api: apiName,
+    ok: isOk,
+    msg: resp.RESULT_MESSAGE || '',
+    time: new Date().toLocaleTimeString('th'),
+    elapsed: elapsed
+  });
+  if (history.length > 20) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (history.length === 0) {
+    list.innerHTML = '<div style="font-size:11px; color:var(--text-muted); text-align:center; padding:8px">No history</div>';
+    return;
+  }
+  list.innerHTML = history.map(h => `
+    <div class="history-item">
+      <span class="history-badge ${h.ok ? 'ok' : 'err'}">${h.ok ? 'OK' : 'ERR'}</span>
+      <span class="history-api">${escHtml(h.api)}</span>
+      <span class="history-time">${h.elapsed}ms</span>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  history = [];
+  renderHistory();
+}
+
+// == Toast ==
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  wrap.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+init();
+</script>
+</body>
+</html>

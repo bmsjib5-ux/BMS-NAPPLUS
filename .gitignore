@@ -1,0 +1,6 @@
+dashboard_ai.zip
+dashboard_ai/
+__MACOSX/
+.claude/
+.vscode/
+*.pdf
