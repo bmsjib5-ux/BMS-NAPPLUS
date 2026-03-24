@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NAPPLUS LAB Query Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --primary: #1f6feb;
+    --primary-glow: rgba(31,111,235,0.15);
+    --success: #3fb950;
+    --success-bg: rgba(63,185,80,0.1);
+    --error: #f85149;
+    --error-bg: rgba(248,81,73,0.1);
+    --warn: #d29922;
+    --warn-bg: rgba(210,153,34,0.1);
+    --accent: #58a6ff;
+    --teal: #39d353;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+    --pink: #f778ba;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-shield {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #e44d6e, #f778ba);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+  }
+  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
+  .header h1 span { color: var(--pink); }
+  .header-subtitle {
+    font-size: 11px; color: var(--text-muted);
+    padding: 2px 8px; background: var(--surface2); border-radius: 4px;
+  }
+  .header-spacer { flex: 1; }
+  .back-link {
+    font-size: 12px; color: var(--accent); text-decoration: none;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .back-link:hover { text-decoration: underline; }
+
+  .conn-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+  }
+  .conn-badge.disconnected {
+    background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .conn-badge.connected {
+    background: var(--success-bg); color: var(--success); border: 1px solid var(--success);
+  }
+  .conn-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+
+  /* Layout */
+  .main {
+    display: flex;
+    height: calc(100vh - 56px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .sidebar-section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .section-title {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .field-group { margin-bottom: 10px; }
+  .field-label {
+    font-size: 11px; color: var(--text-muted); margin-bottom: 3px;
+  }
+  .field-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .field-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-glow);
+  }
+  .field-input[type="date"] {
+    color-scheme: dark;
+  }
+  .status-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; margin-top: 6px;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-muted);
+  }
+  .status-dot.ok { background: var(--success); }
+  .status-dot.err { background: var(--error); }
+
+  .btn {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--primary); background: var(--primary-glow); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.connected { background: var(--error-bg); border-color: var(--error); color: var(--error); }
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #388bfd; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Date filter row */
+  .date-row {
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .date-row .field-group { flex: 1; margin-bottom: 0; }
+
+  /* Lab type filter pills */
+  .lab-filter-row {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;
+  }
+  .lab-pill {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .lab-pill:hover { border-color: var(--accent); color: var(--text); }
+  .lab-pill.active { background: var(--primary-glow); border-color: var(--primary); color: var(--accent); }
+  .lab-pill.all.active { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+
+  /* Content area */
+  .content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .toolbar-info {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .toolbar-spacer { flex: 1; }
+  .toolbar-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .toolbar-btn:hover { color: var(--text); border-color: var(--accent); }
+  .count-badge {
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 8px;
+    border-radius: 10px;
+    min-width: 28px;
+    text-align: center;
+  }
+  .elapsed-badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Tab content */
+  .tab-content {
+    flex: 1;
+    overflow: auto;
+    display: none;
+  }
+  .tab-content.active { display: block; }
+
+  /* Table */
+  .table-wrap { overflow: auto; height: 100%; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .result-table thead { position: sticky; top: 0; z-index: 10; }
+  .result-table th {
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .result-table td {
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .result-table tr:hover td { background: var(--surface2); }
+  .null-val { color: var(--text-muted); font-style: italic; }
+  .num-val { color: var(--teal); }
+
+  /* JSON view */
+  .json-view {
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: pre;
+    line-height: 1.7;
+    overflow: auto;
+    height: 100%;
+  }
+  .json-key { color: var(--accent); }
+  .json-string { color: var(--orange); }
+  .json-number { color: var(--teal); }
+  .json-bool { color: var(--purple); }
+  .json-null { color: var(--text-muted); font-style: italic; }
+
+  /* SQL view */
+  .sql-view {
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    overflow: auto;
+    height: 100%;
+  }
+  .sql-keyword { color: var(--accent); font-weight: 600; }
+  .sql-string { color: var(--orange); }
+  .sql-function { color: var(--purple); }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; padding: 40px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 56px; height: 56px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+    color: var(--pink);
+    margin-bottom: 12px;
+  }
+  .empty-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .empty-sub { font-size: 12px; color: var(--text-muted); line-height: 1.8; }
+
+  /* Error view */
+  .error-view {
+    padding: 24px; text-align: center;
+  }
+  .error-code { font-size: 13px; color: var(--error); font-weight: 700; margin-bottom: 4px; }
+  .error-msg { font-size: 12px; color: var(--text-muted); white-space: pre-wrap; }
+
+  /* Summary cards */
+  .summary-row {
+    display: flex; gap: 8px; padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .summary-card {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+  }
+  .summary-card .val {
+    font-size: 20px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .summary-card .label {
+    font-size: 10px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .summary-card.hiv .val { color: var(--error); }
+  .summary-card.pcr .val { color: var(--warn); }
+  .summary-card.cd4 .val { color: var(--teal); }
+  .summary-card.vl .val { color: var(--purple); }
+  .summary-card.dr .val { color: var(--orange); }
+  .summary-card.bc .val { color: var(--pink); }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast-wrap {
+    position: fixed; bottom: 16px; right: 16px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    padding: 10px 16px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    animation: slideIn 0.3s ease;
+    max-width: 380px;
+  }
+  .toast.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+  .toast.err { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); }
+  .toast.info { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .main { flex-direction: column; }
+    .sidebar { width: 100%; min-width: auto; max-height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-shield">N+</div>
+    <h1>NAPPLUS LAB <span>Query Viewer</span></h1>
+  </div>
+  <span class="header-subtitle">ดูข้อมูล LAB จากฐานข้อมูล HOSxP</span>
+  <div class="header-spacer"></div>
+  <a href="napplus-lab-dashboard.html" class="back-link">&larr; กลับ Dashboard</a>
+  <div class="conn-badge disconnected" id="connBadge">
+    <div class="conn-dot"></div>
+    <span id="connText">Not Connected</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Session -->
+    <div class="sidebar-section">
+      <div class="section-title">BMS Session</div>
+      <div class="field-group">
+        <div class="field-label">Session ID (GUID)</div>
+        <input type="text" class="field-input" id="sessionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+      </div>
+      <div class="status-row">
+        <div class="status-dot" id="sessionDot"></div>
+        <span id="sessionStatusTxt" style="color:var(--text-muted)">No Session ID</span>
+      </div>
+      <div id="sessionUserInfo" style="display:none; margin-top:8px; font-size:12px;"></div>
+      <button class="btn" id="connectBtn" onclick="handleConnect()" style="margin-top:10px">Connect Session</button>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="sidebar-section">
+      <div class="section-title">Date Filter</div>
+      <div class="date-row">
+        <div class="field-group">
+          <div class="field-label">จากวันที่</div>
+          <input type="date" class="field-input" id="dateFrom">
+        </div>
+        <div class="field-group">
+          <div class="field-label">ถึงวันที่</div>
+          <input type="date" class="field-input" id="dateTo">
+        </div>
+      </div>
+      <div style="display:flex; gap:4px; margin-top:8px;">
+        <button class="toolbar-btn" style="flex:1" onclick="setDatePreset('today')">วันนี้</button>
+        <button class="toolbar-btn" style="flex:1" onclick="setDatePreset('yesterday')">เมื่อวาน</button>
+        <button class="toolbar-btn" style="flex:1" onclick="setDatePreset('week')">7 วัน</button>
+        <button class="toolbar-btn" style="flex:1" onclick="setDatePreset('month')">30 วัน</button>
+      </div>
+    </div>
+
+    <!-- Lab Type Filter -->
+    <div class="sidebar-section">
+      <div class="section-title">Lab Type Filter</div>
+      <div class="lab-filter-row">
+        <span class="lab-pill all active" data-type="all" onclick="toggleLabFilter('all', this)">ALL</span>
+        <span class="lab-pill" data-type="101" onclick="toggleLabFilter('101', this)">101 ANTIHIV</span>
+        <span class="lab-pill" data-type="102" onclick="toggleLabFilter('102', this)">102 PCR</span>
+        <span class="lab-pill" data-type="201" onclick="toggleLabFilter('201', this)">201 CD4</span>
+        <span class="lab-pill" data-type="202" onclick="toggleLabFilter('202', this)">202 Viral Load</span>
+        <span class="lab-pill" data-type="203" onclick="toggleLabFilter('203', this)">203 Drug Resistance</span>
+        <span class="lab-pill" data-type="204" onclick="toggleLabFilter('204', this)">204 Blood Chemistry</span>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="sidebar-section">
+      <button class="btn btn-primary" id="runBtn" onclick="runQuery()" disabled>
+        <span id="runBtnText">Query Data</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Summary -->
+    <div class="summary-row" id="summaryRow" style="display:none">
+      <div class="summary-card"><div class="val" id="sumTotal">0</div><div class="label">Total</div></div>
+      <div class="summary-card hiv"><div class="val" id="sum101">0</div><div class="label">101 ANTIHIV</div></div>
+      <div class="summary-card pcr"><div class="val" id="sum102">0</div><div class="label">102 PCR</div></div>
+      <div class="summary-card cd4"><div class="val" id="sum201">0</div><div class="label">201 CD4</div></div>
+      <div class="summary-card vl"><div class="val" id="sum202">0</div><div class="label">202 VL</div></div>
+      <div class="summary-card dr"><div class="val" id="sum203">0</div><div class="label">203 DR</div></div>
+      <div class="summary-card bc"><div class="val" id="sum204">0</div><div class="label">204 BC</div></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar" id="resultToolbar" style="display:none">
+      <div class="toolbar-info">
+        <span>Rows:</span>
+        <span class="count-badge" id="rowCount">0</span>
+        <span class="elapsed-badge" id="elapsedTime"></span>
+      </div>
+      <div class="toolbar-spacer"></div>
+      <button class="toolbar-btn" onclick="exportCsv()">Export CSV</button>
+      <button class="toolbar-btn" onclick="copySql()">Copy SQL</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('table', this)">Table</button>
+      <button class="tab-btn" onclick="showTab('json', this)">{ } JSON</button>
+      <button class="tab-btn" onclick="showTab('sql', this)">SQL Source</button>
+    </div>
+
+    <!-- Tab: Table -->
+    <div class="tab-content active" id="tab-table">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">N+</div>
+        <div class="empty-title">NAPPLUS LAB Query Viewer</div>
+        <div class="empty-sub">
+          ดูข้อมูล LAB จากคิวรี่ต้นทางก่อนแปลผลเป็น JSON<br><br>
+          1. กรอก BMS Session ID แล้วกด Connect Session<br>
+          2. เลือกช่วงวันที่และ Lab Type<br>
+          3. กดปุ่ม Query Data
+        </div>
+      </div>
+      <div class="table-wrap" id="tableWrap" style="display:none"></div>
+    </div>
+
+    <!-- Tab: JSON -->
+    <div class="tab-content" id="tab-json">
+      <div class="json-view" id="jsonContent">No data</div>
+    </div>
+
+    <!-- Tab: SQL -->
+    <div class="tab-content" id="tab-sql">
+      <div class="sql-view" id="sqlContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// == State ==
+const SESSION_COOKIE_NAME = 'bms-session-id';
+const SESSION_COOKIE_DAYS = 7;
+const SESSION_URL_PARAM = 'bms-session-id';
+const DEFAULT_TIMEOUT = 30000;
+const APP_NAME = 'BMS.NAPPLUS.LabViewer';
+
+let sessionConnected = false;
+let sessionData = null;
+let connectionConfig = null;
+let userInfo = null;
+let lastData = [];         // raw data from API
+let filteredData = [];     // after lab type filter
+let activeLabTypes = [];   // empty = ALL
+
+// == Helpers ==
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function minifySql(sql) {
+  return sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+}
+
+// == Cookie Management ==
+function setSessionCookie(sessionId) {
+  const expires = new Date(Date.now() + SESSION_COOKIE_DAYS * 864e5).toUTCString();
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; expires=${expires}; path=/${secure}; SameSite=Lax`;
+}
+
+function getSessionCookie() {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + SESSION_COOKIE_NAME + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function removeSessionCookie() {
+  document.cookie = `${SESSION_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
+// == URL Session ==
+function getSessionFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const s = urlParams.get(SESSION_URL_PARAM);
+  return s && s.trim() ? s.trim() : null;
+}
+
+function removeSessionFromUrl() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has(SESSION_URL_PARAM)) {
+    url.searchParams.delete(SESSION_URL_PARAM);
+    window.history.replaceState({}, '', url.toString());
+  }
+}
+
+// == Session Validation ==
+async function validateSession(sessionId) {
+  try {
+    const url = `https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sessionId)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      signal: controller.signal, mode: 'cors',
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return { MessageCode: res.status, Message: `HTTP ${res.status}: ${res.statusText}` };
+    return await res.json();
+  } catch (e) {
+    const isTimeout = e.name === 'AbortError';
+    return { MessageCode: 0, Message: isTimeout ? 'Timeout' : 'Connection Error', detail: e.message };
+  }
+}
+
+function extractConnectionConfig(data) {
+  const result = data.result || {};
+  const ui = result.user_info || {};
+  let apiUrl, apiAuthKey;
+
+  if (result.key_value && typeof result.key_value === 'object') {
+    apiUrl = result.key_value['hosxp.api_url'];
+    apiAuthKey = result.key_value['hosxp.api_auth_key'];
+  }
+  if (!apiUrl) apiUrl = ui['hosxp.api_url'];
+  if (!apiAuthKey) apiAuthKey = ui['hosxp.api_auth_key'];
+  if (!apiUrl) apiUrl = ui.bms_url;
+  if (!apiAuthKey) apiAuthKey = ui.bms_session_code;
+  if (!apiAuthKey && typeof result.key_value === 'string') apiAuthKey = result.key_value;
+
+  return { apiUrl: (apiUrl || '').replace(/\/$/, ''), apiAuthKey: apiAuthKey || '' };
+}
+
+// == Connect / Disconnect ==
+async function handleConnect() {
+  if (sessionConnected) { disconnectSession(); return; }
+
+  const sessionId = document.getElementById('sessionId').value.trim();
+  if (!sessionId) { showToast('err', 'กรุณาระบุ BMS Session ID'); return; }
+
+  const btn = document.getElementById('connectBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  sessionData = await validateSession(sessionId);
+  btn.disabled = false;
+
+  if (!sessionData || sessionData.MessageCode !== 200) {
+    const errMsg = sessionData?.MessageCode === 500
+      ? 'Session expired - please re-login to HOSxP'
+      : sessionData?.Message || 'Failed to validate session';
+    showToast('err', errMsg);
+    btn.textContent = 'Connect Session';
+    sessionData = null;
+    return;
+  }
+
+  connectionConfig = extractConnectionConfig(sessionData);
+  userInfo = sessionData.result?.user_info || {};
+
+  if (!connectionConfig.apiUrl) {
+    showToast('err', 'No API URL found in session data');
+    btn.textContent = 'Connect Session';
+    sessionData = null;
+    connectionConfig = null;
+    return;
+  }
+
+  sessionConnected = true;
+  setSessionCookie(sessionId);
+
+  btn.textContent = 'Disconnect';
+  btn.classList.add('connected');
+  document.getElementById('runBtn').disabled = false;
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge connected';
+  document.getElementById('connText').textContent = userInfo.name || 'Connected';
+
+  const infoDiv = document.getElementById('sessionUserInfo');
+  infoDiv.style.display = 'block';
+  infoDiv.innerHTML = `<span style="color:var(--success)">${escHtml(userInfo.name || '')}</span>
+    <span style="color:var(--text-muted); margin-left:6px">${escHtml(userInfo.location || '')}</span>`;
+
+  document.getElementById('sessionDot').className = 'status-dot ok';
+  document.getElementById('sessionStatusTxt').textContent = 'Session Active';
+  document.getElementById('sessionStatusTxt').style.color = 'var(--success)';
+
+  showToast('ok', `Connected: ${userInfo.name || 'OK'} @ ${userInfo.location || ''}`);
+}
+
+function disconnectSession() {
+  sessionConnected = false;
+  sessionData = null;
+  connectionConfig = null;
+  userInfo = null;
+  removeSessionCookie();
+
+  document.getElementById('connectBtn').textContent = 'Connect Session';
+  document.getElementById('connectBtn').classList.remove('connected');
+  document.getElementById('runBtn').disabled = true;
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge disconnected';
+  document.getElementById('connText').textContent = 'Not Connected';
+
+  document.getElementById('sessionUserInfo').style.display = 'none';
+  document.getElementById('sessionDot').className = 'status-dot';
+  document.getElementById('sessionStatusTxt').textContent = 'No Session ID';
+  document.getElementById('sessionStatusTxt').style.color = 'var(--text-muted)';
+
+  showToast('info', 'Session disconnected');
+}
+
+function updateSessionStatus() {
+  const val = document.getElementById('sessionId').value.trim();
+  const dot = document.getElementById('sessionDot');
+  const txt = document.getElementById('sessionStatusTxt');
+  const guidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (!val) {
+    dot.className = 'status-dot'; txt.textContent = 'No Session ID'; txt.style.color = 'var(--text-muted)';
+  } else if (guidPattern.test(val)) {
+    dot.className = 'status-dot ok'; txt.textContent = 'Valid GUID format'; txt.style.color = 'var(--success)';
+  } else {
+    dot.className = 'status-dot err'; txt.textContent = 'Invalid format (must be GUID)'; txt.style.color = 'var(--error)';
+  }
+}
+
+// == Date Presets ==
+function setDatePreset(preset) {
+  const now = new Date();
+  let from = new Date(), to = new Date();
+  if (preset === 'today') {
+    // default
+  } else if (preset === 'yesterday') {
+    from.setDate(now.getDate() - 1);
+    to.setDate(now.getDate() - 1);
+  } else if (preset === 'week') {
+    from.setDate(now.getDate() - 6);
+  } else if (preset === 'month') {
+    from.setDate(now.getDate() - 29);
+  }
+  document.getElementById('dateFrom').value = formatDate(from);
+  document.getElementById('dateTo').value = formatDate(to);
+  renderSqlPreview();
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// == Lab Type Filter ==
+function toggleLabFilter(type, el) {
+  if (type === 'all') {
+    activeLabTypes = [];
+    document.querySelectorAll('.lab-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  } else {
+    document.querySelector('.lab-pill.all').classList.remove('active');
+    el.classList.toggle('active');
+    activeLabTypes = [...document.querySelectorAll('.lab-pill.active:not(.all)')].map(p => p.dataset.type);
+    if (activeLabTypes.length === 0) {
+      document.querySelector('.lab-pill.all').classList.add('active');
+    }
+  }
+
+  // Re-filter if we have data
+  if (lastData.length > 0) {
+    applyFilter();
+    renderTable(filteredData);
+    renderSummary(lastData);
+  }
+  renderSqlPreview();
+}
+
+function applyFilter() {
+  if (activeLabTypes.length === 0) {
+    filteredData = [...lastData];
+  } else {
+    filteredData = lastData.filter(row => {
+      const lt = String(row.lab_type || row.LAB_TYPE || '');
+      return activeLabTypes.includes(lt);
+    });
+  }
+}
+
+// == Build SQL ==
+function buildSql() {
+  const dateFrom = document.getElementById('dateFrom').value || todayStr();
+  const dateTo = document.getElementById('dateTo').value || todayStr();
+
+  let labTypes = activeLabTypes.length > 0
+    ? activeLabTypes.map(t => `'${t}'`).join(',')
+    : "'101','102','201','202','203','204'";
+
+  return `SELECT i.gen_order_prefix::INT as LAB_TYPE,
+(SELECT hospitalcode FROM opdconfig limit 1)::TEXT AS HCODE_REQUEST,
+(SELECT hospitalcode FROM opdconfig limit 1)::TEXT AS HCODE_LAB,
+(CASE WHEN i.gen_order_prefix in('101','102') then p.cid ELSE '' END)::TEXT AS PATIENT_ID ,
+h.lab_order_number::TEXT AS LAB_REQUEST_ID,
+TO_CHAR(
+  (EXTRACT(YEAR FROM h.order_date) + 543)::int * 10000 +
+  EXTRACT(MONTH FROM h.order_date)::int * 100 +
+  EXTRACT(DAY FROM h.order_date)::int,
+  'FM00000000'
+)::TEXT AS REQUEST_DATE,
+ptt.name::TEXT as PATIENT_RIGHT,
+'Y'::TEXT AS REQUEST_APPROVED_STATUS,
+'1'::TEXT AS LAB_STATUS,
+i.lab_items_name::TEXT AS LAB_ITEM,
+''::TEXT AS REQUEST_APPROVED_REMARK ,
+o.lab_order_result::TEXT AS TEST_RESULT,
+''::TEXT AS REMARK_NODETECTED
+ FROM lab_head h
+LEFT JOIN lab_order o on o.lab_order_number = h.lab_order_number
+INNER JOIN lab_items i on i.lab_items_code = o.lab_items_code
+LEFT JOIN patient p on p.hn = h.hn
+LEFT JOIN ovst ov on ov.vn = h.vn
+LEFT JOIN pttype ptt on ptt.pttype = ov.pttype
+WHERE h.order_date BETWEEN '${dateFrom}' AND '${dateTo}'
+AND i.gen_order_prefix in(${labTypes}) ;`;
+}
+
+// == SQL Syntax Highlight ==
+function highlightSql(sql) {
+  let s = sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const keywords = ['SELECT','FROM','LEFT JOIN','INNER JOIN','WHERE','AND','BETWEEN','AS','CASE','WHEN','THEN','ELSE','END','IN','LIMIT','OR','ON'];
+  keywords.forEach(kw => {
+    s = s.replace(new RegExp('\\b(' + kw + ')\\b', 'gi'), '<span class="sql-keyword">$1</span>');
+  });
+  s = s.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="sql-string">$1</span>');
+  ['TO_CHAR','EXTRACT','YEAR','MONTH','DAY','INT','TEXT','FM00000000'].forEach(fn => {
+    s = s.replace(new RegExp('\\b(' + fn + ')\\b', 'g'), '<span class="sql-function">$1</span>');
+  });
+  return s;
+}
+
+function renderSqlPreview() {
+  const el = document.getElementById('sqlContent');
+  if (el) el.innerHTML = highlightSql(buildSql());
+}
+
+// == Run Query ==
+async function runQuery() {
+  if (!sessionConnected) { showToast('err', 'กรุณา Connect Session ก่อน'); return; }
+
+  const btn = document.getElementById('runBtn');
+  const btnText = document.getElementById('runBtnText');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner">&#8635;</span> Querying...';
+
+  const sql = buildSql();
+  const minified = minifySql(sql);
+  const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(minified)}&app=${encodeURIComponent(APP_NAME)}`;
+
+  const startTime = Date.now();
+  let response;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+
+    const res = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${connectionConfig.apiAuthKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    response = await res.json();
+
+    if (res.status === 401) {
+      response = { MessageCode: 401, Message: 'Unauthorized - API Key ไม่ถูกต้องหรือหมดอายุ' };
+    } else if (res.status === 502) {
+      response = { MessageCode: 502, Message: 'Bad Gateway - ตรวจสอบการเชื่อมต่อ Tunnel' };
+    } else if (res.status === 500) {
+      response = { MessageCode: 500, Message: 'Session Expired - กรุณา login ใหม่' };
+    }
+  } catch (e) {
+    const isTimeout = e.name === 'AbortError';
+    response = {
+      MessageCode: 0,
+      Message: isTimeout ? `Timeout after ${DEFAULT_TIMEOUT/1000}s` : `Connection Error: ${e.message}`,
+    };
+  }
+
+  const elapsed = Date.now() - startTime;
+  btn.disabled = false;
+  btnText.textContent = 'Query Data';
+
+  // Process result
+  const isOk = response.MessageCode === 200;
+
+  if (!isOk) {
+    showToast('err', `Error ${response.MessageCode}: ${response.Message}`);
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('tableWrap').style.display = 'block';
+    document.getElementById('tableWrap').innerHTML = `
+      <div class="error-view">
+        <div class="error-code">Error ${response.MessageCode}</div>
+        <div class="error-msg">${escHtml(response.Message || 'Unknown error')}\n${escHtml(response.detail || '')}</div>
+      </div>`;
+    document.getElementById('resultToolbar').style.display = 'flex';
+    document.getElementById('summaryRow').style.display = 'none';
+    document.getElementById('rowCount').textContent = '!';
+    document.getElementById('elapsedTime').textContent = `${elapsed}ms`;
+    return;
+  }
+
+  // Extract data array
+  lastData = response.data || response.result?.data || [];
+  if (!Array.isArray(lastData)) lastData = [];
+
+  applyFilter();
+
+  // Show results
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultToolbar').style.display = 'flex';
+  document.getElementById('summaryRow').style.display = 'flex';
+  document.getElementById('rowCount').textContent = filteredData.length;
+  document.getElementById('elapsedTime').textContent = `${elapsed}ms`;
+
+  renderTable(filteredData);
+  renderSummary(lastData);
+  renderJsonTab(filteredData);
+
+  showToast('ok', `สำเร็จ - ${lastData.length} รายการ (${elapsed}ms)`);
+}
+
+// == Render Table ==
+function renderTable(data) {
+  const wrap = document.getElementById('tableWrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = '';
+
+  if (data.length === 0) {
+    wrap.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13px">ไม่พบข้อมูล (0 records)</div>';
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'result-table';
+
+  // Get fields
+  const fields = [];
+  data.forEach(row => {
+    Object.keys(row).forEach(k => { if (!fields.includes(k)) fields.push(k); });
+  });
+
+  // Header
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr>${fields.map(f => `<th>${escHtml(f)}</th>`).join('')}</tr>`;
+  table.appendChild(thead);
+
+  // Body
+  const tbody = document.createElement('tbody');
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    fields.forEach(f => {
+      const td = document.createElement('td');
+      const val = row[f];
+      if (val === null || val === undefined || val === '') {
+        td.innerHTML = '<span class="null-val">-</span>';
+      } else if (typeof val === 'object') {
+        td.textContent = JSON.stringify(val);
+        td.style.color = 'var(--purple)';
+        td.title = JSON.stringify(val, null, 2);
+      } else if (typeof val === 'number') {
+        td.innerHTML = `<span class="num-val">${val}</span>`;
+      } else {
+        td.textContent = val;
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+}
+
+// == Render Summary ==
+function renderSummary(data) {
+  const counts = { total: data.length };
+  ['101','102','201','202','203','204'].forEach(t => { counts[t] = 0; });
+  data.forEach(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    if (counts[lt] !== undefined) counts[lt]++;
+  });
+  document.getElementById('sumTotal').textContent = counts.total;
+  document.getElementById('sum101').textContent = counts['101'];
+  document.getElementById('sum102').textContent = counts['102'];
+  document.getElementById('sum201').textContent = counts['201'];
+  document.getElementById('sum202').textContent = counts['202'];
+  document.getElementById('sum203').textContent = counts['203'];
+  document.getElementById('sum204').textContent = counts['204'];
+}
+
+// == Render JSON Tab ==
+function renderJsonTab(data) {
+  const el = document.getElementById('jsonContent');
+  el.innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+      let cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) cls = 'json-key';
+        else cls = 'json-string';
+      } else if (/true|false/.test(match)) cls = 'json-bool';
+      else if (/null/.test(match)) cls = 'json-null';
+      return `<span class="${cls}">${match}</span>`;
+    });
+}
+
+// == Tabs ==
+function showTab(name, el) {
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+// == Export CSV ==
+function exportCsv() {
+  if (filteredData.length === 0) { showToast('err', 'ไม่มีข้อมูลให้ Export'); return; }
+
+  const fields = [];
+  filteredData.forEach(row => {
+    Object.keys(row).forEach(k => { if (!fields.includes(k)) fields.push(k); });
+  });
+
+  let csv = fields.map(f => `"${f}"`).join(',') + '\n';
+  filteredData.forEach(row => {
+    csv += fields.map(f => {
+      let v = row[f];
+      if (v === null || v === undefined) return '';
+      if (typeof v === 'object') v = JSON.stringify(v);
+      return `"${String(v).replace(/"/g, '""')}"`;
+    }).join(',') + '\n';
+  });
+
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `napplus-lab-${document.getElementById('dateFrom').value || todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('ok', 'Export CSV สำเร็จ');
+}
+
+// == Copy SQL ==
+function copySql() {
+  const sql = buildSql();
+  navigator.clipboard.writeText(sql).then(() => {
+    showToast('ok', 'Copy SQL สำเร็จ');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = sql; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('ok', 'Copy SQL สำเร็จ');
+  });
+}
+
+// == Toast ==
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  wrap.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// == Init ==
+function init() {
+  // Set default dates to today
+  const today = todayStr();
+  document.getElementById('dateFrom').value = today;
+  document.getElementById('dateTo').value = today;
+
+  // Session ID watcher
+  document.getElementById('sessionId').addEventListener('input', updateSessionStatus);
+
+  // Date change updates SQL preview
+  document.getElementById('dateFrom').addEventListener('change', renderSqlPreview);
+  document.getElementById('dateTo').addEventListener('change', renderSqlPreview);
+
+  // Render initial SQL preview
+  renderSqlPreview();
+
+  // Priority 1: URL parameter
+  const urlSessionId = getSessionFromUrl();
+  if (urlSessionId) {
+    document.getElementById('sessionId').value = urlSessionId;
+    updateSessionStatus();
+    setSessionCookie(urlSessionId);
+    removeSessionFromUrl();
+    handleConnect();
+    return;
+  }
+
+  // Priority 2: Cookie
+  const cookieSessionId = getSessionCookie();
+  if (cookieSessionId) {
+    document.getElementById('sessionId').value = cookieSessionId;
+    updateSessionStatus();
+    handleConnect();
+  }
+}
+
+init();
+</script>
+</body>
+</html>

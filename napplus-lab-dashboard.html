@@ -583,6 +583,41 @@
   .json-bool { color: var(--purple); }
   .json-null { color: var(--text-muted); font-style: italic; }
 
+  /* SQL view */
+  .sql-view {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    overflow: auto;
+    max-height: calc(100% - 40px);
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .sql-keyword { color: var(--accent); font-weight: 600; }
+  .sql-string { color: var(--orange); }
+  .sql-function { color: var(--purple); }
+  .sql-alias { color: var(--teal); }
+  .sql-comment { color: var(--text-muted); font-style: italic; }
+  .sql-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  .sql-copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
   /* Request view */
   .request-view {
     background: var(--surface2);
@@ -976,6 +1011,7 @@
         <button class="resp-tab active" onclick="showTab('table', this)">Table <span class="count" id="countBadge">0</span></button>
         <button class="resp-tab" onclick="showTab('json', this)">{ } JSON</button>
         <button class="resp-tab" onclick="showTab('request', this)">Request</button>
+        <button class="resp-tab" onclick="showTab('sql', this)">SQL Source</button>
       </div>
 
       <div class="response-content active" id="tab-table">
@@ -1007,6 +1043,14 @@
           <div class="empty-title">Waiting for request</div>
           <div class="empty-sub">No request sent yet</div>
         </div>
+      </div>
+
+      <div class="response-content" id="tab-sql">
+        <div class="result-meta">
+          <div class="meta-status ok">SOURCE SQL - คิวรี่ต้นทางก่อนแปลผลเป็น JSON</div>
+          <button class="sql-copy-btn" onclick="copySqlToClipboard()">Copy SQL</button>
+        </div>
+        <div class="sql-view" id="sqlContent"></div>
       </div>
     </div>
   </div>
@@ -1358,6 +1402,7 @@ function init() {
 
 function resetToTemplate() {
   document.getElementById('jsonEditor').value = getTemplate(currentApi);
+  renderSqlTab();
 }
 
 // == NAPPLUS Connection ==
@@ -1758,6 +1803,92 @@ function showToast(type, msg) {
   toast.textContent = msg;
   wrap.appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
+}
+
+// == Source SQL ==
+function getSourceSql() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+
+  // Determine lab type filter based on current selection or all
+  let labFilter = "('101','102','201','202','203','204')";
+
+  return `SELECT i.gen_order_prefix::INT as LAB_TYPE,
+(SELECT hospitalcode FROM opdconfig limit 1)::TEXT AS HCODE_REQUEST,
+(SELECT hospitalcode FROM opdconfig limit 1)::TEXT AS HCODE_LAB,
+(CASE WHEN i.gen_order_prefix in('101','102') then p.cid ELSE '' END)::TEXT AS PATIENT_ID ,
+h.lab_order_number::TEXT AS LAB_REQUEST_ID,
+TO_CHAR(
+  (EXTRACT(YEAR FROM h.order_date) + 543)::int * 10000 +
+  EXTRACT(MONTH FROM h.order_date)::int * 100 +
+  EXTRACT(DAY FROM h.order_date)::int,
+  'FM00000000'
+)::TEXT AS REQUEST_DATE,
+ptt.name::TEXT as PATIENT_RIGHT,
+'Y'::TEXT AS REQUEST_APPROVED_STATUS,
+'1'::TEXT AS LAB_STATUS,
+i.lab_items_name::TEXT AS LAB_ITEM,
+''::TEXT AS REQUEST_APPROVED_REMARK ,
+o.lab_order_result::TEXT AS TEST_RESULT,
+''::TEXT AS REMARK_NODETECTED
+ FROM lab_head h
+LEFT JOIN lab_order o on o.lab_order_number = h.lab_order_number
+INNER JOIN lab_items i on i.lab_items_code = o.lab_items_code
+LEFT JOIN patient p on p.hn = h.hn
+LEFT JOIN ovst ov on ov.vn = h.vn
+LEFT JOIN pttype ptt on ptt.pttype = ov.pttype
+WHERE h.order_date BETWEEN '${dateStr}' AND '${dateStr}'
+AND i.gen_order_prefix in${labFilter} ;`;
+}
+
+function highlightSql(sql) {
+  let s = sql.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Highlight SQL keywords
+  const keywords = ['SELECT','FROM','LEFT JOIN','INNER JOIN','WHERE','AND','BETWEEN','AS','CASE','WHEN','THEN','ELSE','END','IN','LIMIT','OR','ON'];
+  keywords.forEach(kw => {
+    const re = new RegExp('\\b(' + kw + ')\\b', 'gi');
+    s = s.replace(re, '<span class="sql-keyword">$1</span>');
+  });
+
+  // Highlight strings
+  s = s.replace(/('(?:[^'\\]|\\.)*')/g, '<span class="sql-string">$1</span>');
+
+  // Highlight functions
+  const funcs = ['TO_CHAR','EXTRACT','YEAR','MONTH','DAY','INT','TEXT'];
+  funcs.forEach(fn => {
+    const re = new RegExp('\\b(' + fn + ')\\b', 'g');
+    s = s.replace(re, '<span class="sql-function">$1</span>');
+  });
+
+  return s;
+}
+
+function renderSqlTab() {
+  const sql = getSourceSql();
+  const el = document.getElementById('sqlContent');
+  if (el) {
+    el.innerHTML = highlightSql(sql);
+  }
+}
+
+function copySqlToClipboard() {
+  const sql = getSourceSql();
+  navigator.clipboard.writeText(sql).then(() => {
+    showToast('ok', 'SQL copied to clipboard');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = sql;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('ok', 'SQL copied to clipboard');
+  });
 }
 
 init();
