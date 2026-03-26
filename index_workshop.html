@@ -156,13 +156,14 @@
     display: flex; align-items: center; gap: 8px;
   }
   .hero-stat .num {
-    font-size: 22px; font-weight: 700;
+    font-size: 32px; font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
     color: var(--accent);
+    line-height: 1;
   }
   .hero-stat .label {
-    font-size: 11px; color: var(--text-muted);
-    line-height: 1.3;
+    font-size: 12px; color: var(--text-muted);
+    line-height: 1.4;
   }
   .stat-divider {
     width: 1px; background: var(--border);
@@ -312,16 +313,16 @@
 
   .card-header { display: flex; align-items: center; gap: 12px; }
   .card-icon {
-    width: 40px; height: 40px; border-radius: 10px;
+    width: 44px; height: 44px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; flex-shrink: 0;
-    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px; flex-shrink: 0;
+    line-height: 1;
   }
   .card.blue .card-icon { background: rgba(31,111,235,0.12); color: var(--accent); }
   .card.green .card-icon { background: rgba(63,185,80,0.1); color: var(--success); }
   .card.purple .card-icon { background: rgba(188,140,255,0.1); color: var(--purple); }
   .card.pink .card-icon { background: rgba(247,120,186,0.1); color: var(--pink); }
-  .card-title { font-size: 14px; font-weight: 700; line-height: 1.3; }
+  .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
   .card-version {
     font-size: 9px; color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace;
@@ -370,7 +371,7 @@
   .card-grid.list-view .card::before { height: 100%; width: 3px; right: auto; border-radius: 8px 0 0 8px; }
   .card-grid.list-view .card:hover { transform: translateX(3px); }
   .card-grid.list-view .card-header { flex-shrink: 0; }
-  .card-grid.list-view .card-icon { width: 36px; height: 36px; font-size: 13px; }
+  .card-grid.list-view .card-icon { width: 36px; height: 36px; font-size: 18px; }
   .card-grid.list-view .card-title { font-size: 13px; }
   .card-grid.list-view .card-desc {
     flex: 1; font-size: 12px;
@@ -440,7 +441,7 @@
       </div>
     </div>
     <div class="hero-content">
-      <div class="hero-icon">W</div>
+      <div class="hero-icon">&#127963;</div>
       <div>
         <h1>BMS <span>Workshop</span> Hub</h1>
         <div class="hero-sub">ระบบรายงานสรุปการอบรม Work Shop ระบบงานโรงพยาบาล &mdash; เชื่อมต่อผ่าน BMS Session API</div>
@@ -473,7 +474,7 @@
 <div class="container">
   <!-- Session Bar -->
   <div class="session-bar">
-    <div class="session-bar-icon">S</div>
+    <div class="session-bar-icon">&#128273;</div>
     <span class="session-bar-label">Session</span>
     <input type="text" id="sessionInput" placeholder="Paste BMS Session ID to auto-connect..."
       spellcheck="false" autocomplete="off">
@@ -481,12 +482,12 @@
 
   <!-- Category Filter -->
   <div class="cat-row">
-    <span class="cat-pill all active" onclick="filterCat('all',this)">All (28)</span>
-    <span class="cat-pill" onclick="filterCat('clinical',this)">Clinical / OPD</span>
-    <span class="cat-pill" onclick="filterCat('inpatient',this)">Inpatient / Ward</span>
-    <span class="cat-pill" onclick="filterCat('diagnostic',this)">Diagnostic / LAB</span>
-    <span class="cat-pill" onclick="filterCat('support',this)">Support Services</span>
-    <span class="cat-pill" onclick="filterCat('admin',this)">Admin / Records</span>
+    <span class="cat-pill all active" onclick="filterCat('all',this)">&#127760; All (28)</span>
+    <span class="cat-pill" onclick="filterCat('clinical',this)">&#129658; Clinical / OPD</span>
+    <span class="cat-pill" onclick="filterCat('inpatient',this)">&#128719; Inpatient / Ward</span>
+    <span class="cat-pill" onclick="filterCat('diagnostic',this)">&#129514; Diagnostic / LAB</span>
+    <span class="cat-pill" onclick="filterCat('support',this)">&#128137; Support Services</span>
+    <span class="cat-pill" onclick="filterCat('admin',this)">&#128451; Admin / Records</span>
   </div>
 
   <!-- Toolbar -->
@@ -507,7 +508,7 @@
 
     <!-- LAB -->
     <a class="card blue" href="#" onclick="openDashboard('bms-lab-workshop.html',event)" data-name="LAB Workshop" data-cat="diagnostic" data-th="ห้อง LAB">
-      <div class="card-header"><div class="card-icon">WS</div><div><div class="card-title">LAB Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129514;</div><div><div class="card-title">LAB Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้อง LAB &mdash; HN, สั่ง Lab, รับ Specimen, รายงานผล</div>
       <div class="card-tags"><span class="card-tag">LAB</span><span class="card-tag">Chart</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -515,7 +516,7 @@
 
     <!-- Admit -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-admit.html',event)" data-name="Admit Workshop" data-cat="inpatient" data-th="Admit">
-      <div class="card-header"><div class="card-icon">AD</div><div><div class="card-title">Admit Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128719;</div><div><div class="card-title">Admit Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงาน Admit &mdash; รับ Admit, Transfer</div>
       <div class="card-tags"><span class="card-tag">Admit</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -523,7 +524,7 @@
 
     <!-- Blood Bank -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-blood-bank.html',event)" data-name="Blood Bank Workshop" data-cat="diagnostic" data-th="Blood Bank">
-      <div class="card-header"><div class="card-icon">BB</div><div><div class="card-title">Blood Bank Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129656;</div><div><div class="card-title">Blood Bank Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงาน Blood Bank &mdash; Request, รับเลือด, Crossmatch, จ่ายเลือด</div>
       <div class="card-tags"><span class="card-tag">Blood Bank</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -531,7 +532,7 @@
 
     <!-- IPD -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-ipd.html',event)" data-name="IPD Workshop" data-cat="inpatient" data-th="IPD">
-      <div class="card-header"><div class="card-icon">IP</div><div><div class="card-title">IPD Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128202;</div><div><div class="card-title">IPD Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงาน IPD &mdash; รับใหม่, ย้ายวอร์ด, หัตถการ, Discharge</div>
       <div class="card-tags"><span class="card-tag">IPD</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -539,7 +540,7 @@
 
     <!-- X-Ray -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-xray.html',event)" data-name="X-Ray Workshop" data-cat="diagnostic" data-th="X-Ray">
-      <div class="card-header"><div class="card-icon">XR</div><div><div class="card-title">X-Ray Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#9832;</div><div><div class="card-title">X-Ray Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงาน X-Ray &mdash; Request, Order, บันทึกผล</div>
       <div class="card-tags"><span class="card-tag">X-Ray</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -547,7 +548,7 @@
 
     <!-- Pathology -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-pathology.html',event)" data-name="Pathology Workshop" data-cat="diagnostic" data-th="ชิ้นเนื้อ">
-      <div class="card-header"><div class="card-icon">PA</div><div><div class="card-title">Pathology Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128300;</div><div><div class="card-title">Pathology Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานชิ้นเนื้อ &mdash; Request, รับ Specimen, รายงานผล</div>
       <div class="card-tags"><span class="card-tag">Pathology</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -555,7 +556,7 @@
 
     <!-- Finance -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-finance.html',event)" data-name="Finance Workshop" data-cat="admin" data-th="การเงิน">
-      <div class="card-header"><div class="card-icon">FN</div><div><div class="card-title">Finance Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128176;</div><div><div class="card-title">Finance Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานการเงิน &mdash; ใบเสร็จ, ใบหนี้, ใบลดหนี้</div>
       <div class="card-tags"><span class="card-tag">Finance</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -563,7 +564,7 @@
 
     <!-- ER -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-er.html',event)" data-name="ER Workshop" data-cat="clinical" data-th="ฉุกเฉิน ER">
-      <div class="card-header"><div class="card-icon">ER</div><div><div class="card-title">ER Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128680;</div><div><div class="card-title">ER Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานฉุกเฉิน ER &mdash; รับ ER, CC, Vital Sign, หัตถการ, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">ER</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -571,7 +572,7 @@
 
     <!-- Screening -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-screening.html',event)" data-name="Screening Workshop" data-cat="clinical" data-th="ซักประวัติ">
-      <div class="card-header"><div class="card-icon">SC</div><div><div class="card-title">Screening Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128203;</div><div><div class="card-title">Screening Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานซักประวัติ &mdash; Vital Sign, CC, HPI, หัตถการ, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Screening</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -579,7 +580,7 @@
 
     <!-- Registration -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-screening-bc.html',event)" data-name="Registration Workshop" data-cat="admin" data-th="ซักประวัติ-bc เวชระเบียน">
-      <div class="card-header"><div class="card-icon">RG</div><div><div class="card-title">Registration Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128221;</div><div><div class="card-title">Registration Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานซักประวัติ-bc &mdash; HN ใหม่, สิทธิ์, New Visit, เช็คสิทธิ์</div>
       <div class="card-tags"><span class="card-tag">Registration</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -587,7 +588,7 @@
 
     <!-- Checkup -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-checkup.html',event)" data-name="Checkup Workshop" data-cat="clinical" data-th="ตรวจสุขภาพ">
-      <div class="card-header"><div class="card-icon">CU</div><div><div class="card-title">Checkup Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129657;</div><div><div class="card-title">Checkup Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานตรวจสุขภาพ &mdash; ผู้ป่วย, Vital Sign, LAB, X-Ray</div>
       <div class="card-tags"><span class="card-tag">Checkup</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -595,7 +596,7 @@
 
     <!-- Hemodialysis -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-hemodialysis.html',event)" data-name="Hemodialysis Workshop" data-cat="clinical" data-th="ไตเทียม">
-      <div class="card-header"><div class="card-icon">HD</div><div><div class="card-title">Hemodialysis Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129516;</div><div><div class="card-title">Hemodialysis Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานไตเทียม &mdash; Vital Sign, CC, HPI, หัตถการ, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Hemodialysis</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -603,7 +604,7 @@
 
     <!-- Dental -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-dental.html',event)" data-name="Dental Workshop" data-cat="clinical" data-th="ทันตกรรม">
-      <div class="card-header"><div class="card-icon">DT</div><div><div class="card-title">Dental Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129463;</div><div><div class="card-title">Dental Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานทันตกรรม &mdash; CC, Dental Care, หัตถการทันต์, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Dental</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -611,7 +612,7 @@
 
     <!-- Insurance -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-insurance.html',event)" data-name="Insurance Workshop" data-cat="admin" data-th="ประกัน">
-      <div class="card-header"><div class="card-icon">IN</div><div><div class="card-title">Insurance Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128179;</div><div><div class="card-title">Insurance Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานประกัน &mdash; เพิ่มสิทธิ์, เช็คสิทธิ์, ใบเสร็จ</div>
       <div class="card-tags"><span class="card-tag">Insurance</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -619,7 +620,7 @@
 
     <!-- Anesthesia -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-anesthesia.html',event)" data-name="Anesthesia Workshop" data-cat="support" data-th="วิสัญญี">
-      <div class="card-header"><div class="card-icon">AN</div><div><div class="card-title">Anesthesia Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128137;</div><div><div class="card-title">Anesthesia Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานวิสัญญี &mdash; HN, Case, Visit, Screen, Anes, รายการยา</div>
       <div class="card-tags"><span class="card-tag">Anesthesia</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -627,7 +628,7 @@
 
     <!-- Social Medicine -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-social-medicine.html',event)" data-name="Social Medicine Workshop" data-cat="clinical" data-th="เวชกรรมสังคม">
-      <div class="card-header"><div class="card-icon">SM</div><div><div class="card-title">Social Medicine Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#127963;</div><div><div class="card-title">Social Medicine Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานเวชกรรมสังคม &mdash; HN ใหม่, สิทธิ์, Visit, Diag, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Social Med</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -635,7 +636,7 @@
 
     <!-- Rehabilitation -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-rehabilitation.html',event)" data-name="Rehabilitation Workshop" data-cat="support" data-th="เวชศาสตร์ฟื้นฟู">
-      <div class="card-header"><div class="card-icon">RH</div><div><div class="card-title">Rehabilitation Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129468;</div><div><div class="card-title">Rehabilitation Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานเวชศาสตร์ฟื้นฟู &mdash; Plan, CC, Vital Sign, LAB, X-Ray</div>
       <div class="card-tags"><span class="card-tag">Rehab</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -643,7 +644,7 @@
 
     <!-- Medical Statistics -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-medical-stat.html',event)" data-name="Medical Statistics Workshop" data-cat="admin" data-th="เวชสถิติ">
-      <div class="card-header"><div class="card-icon">MS</div><div><div class="card-title">Medical Statistics Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128200;</div><div><div class="card-title">Medical Statistics Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานเวชสถิติ &mdash; OPD/IPD Rent, File, Diag, Oper, Chart</div>
       <div class="card-tags"><span class="card-tag">Med Stat</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -651,7 +652,7 @@
 
     <!-- Medical Records -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-medical-record.html',event)" data-name="Medical Records Workshop" data-cat="admin" data-th="เวชระเบียน">
-      <div class="card-header"><div class="card-icon">MR</div><div><div class="card-title">Medical Records Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128451;</div><div><div class="card-title">Medical Records Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานเวชระเบียน &mdash; HN ใหม่, สิทธิ์, New Visit, เช็คสิทธิ์</div>
       <div class="card-tags"><span class="card-tag">Med Record</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -659,7 +660,7 @@
 
     <!-- Doctor -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-doctor.html',event)" data-name="Doctor Workshop" data-cat="clinical" data-th="แพทย์">
-      <div class="card-header"><div class="card-icon">DR</div><div><div class="card-title">Doctor Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129658;</div><div><div class="card-title">Doctor Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานแพทย์ &mdash; ตรวจ OPD, Diag, HPI, LAB, X-Ray, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Doctor</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -667,7 +668,7 @@
 
     <!-- Thai Medicine -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-thai-medicine.html',event)" data-name="Thai Medicine Workshop" data-cat="clinical" data-th="แพทย์แผนไทย">
-      <div class="card-header"><div class="card-icon">TM</div><div><div class="card-title">Thai Medicine Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#127807;</div><div><div class="card-title">Thai Medicine Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานแพทย์แผนไทย &mdash; Vital Sign, CC, Diag, Health Med</div>
       <div class="card-tags"><span class="card-tag">Thai Med</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -675,7 +676,7 @@
 
     <!-- Nutrition -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-nutrition.html',event)" data-name="Nutrition Workshop" data-cat="support" data-th="โภชนาการ">
-      <div class="card-header"><div class="card-icon">NU</div><div><div class="card-title">Nutrition Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#127858;</div><div><div class="card-title">Nutrition Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานโภชนาการ &mdash; ยืนยันอาหาร, ส่งอาหาร, จำนวน AN</div>
       <div class="card-tags"><span class="card-tag">Nutrition</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -683,7 +684,7 @@
 
     <!-- Health Promotion -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-health-promotion.html',event)" data-name="Health Promotion Workshop" data-cat="clinical" data-th="ส่งเสริม">
-      <div class="card-header"><div class="card-icon">HP</div><div><div class="card-title">Health Promotion Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128154;</div><div><div class="card-title">Health Promotion Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานส่งเสริม &mdash; Vital Sign, CC, HPI, LAB, X-Ray, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Promotion</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -691,7 +692,7 @@
 
     <!-- Labor Room -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-labor-room.html',event)" data-name="Labor Room Workshop" data-cat="inpatient" data-th="ห้องคลอด">
-      <div class="card-header"><div class="card-icon">LR</div><div><div class="card-title">Labor Room Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128118;</div><div><div class="card-title">Labor Room Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้องคลอด &mdash; รับใหม่, หัตถการ, LAB, Discharge, คลอด</div>
       <div class="card-tags"><span class="card-tag">Labor</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -699,7 +700,7 @@
 
     <!-- Pharmacy OPD -->
     <a class="card pink" href="#" onclick="openDashboard('bms-ws-pharmacy-opd.html',event)" data-name="Pharmacy OPD Workshop" data-cat="support" data-th="ห้องจ่ายยา">
-      <div class="card-header"><div class="card-icon">PH</div><div><div class="card-title">Pharmacy OPD Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128138;</div><div><div class="card-title">Pharmacy OPD Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้องจ่ายยา &mdash; VN, จ่ายยา Rx, ยา, Non-Drug</div>
       <div class="card-tags"><span class="card-tag">Pharmacy</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -707,7 +708,7 @@
 
     <!-- Pharmacy IPD -->
     <a class="card blue" href="#" onclick="openDashboard('bms-ws-pharmacy-ipd.html',event)" data-name="Pharmacy IPD Workshop" data-cat="support" data-th="ห้องจ่ายยา IPD">
-      <div class="card-header"><div class="card-icon">PI</div><div><div class="card-title">Pharmacy IPD Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#128137;</div><div><div class="card-title">Pharmacy IPD Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้องจ่ายยา IPD &mdash; Med Plan, IPT Order, Confirm</div>
       <div class="card-tags"><span class="card-tag">Pharmacy IPD</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -715,7 +716,7 @@
 
     <!-- Exam Room -->
     <a class="card green" href="#" onclick="openDashboard('bms-ws-exam-room.html',event)" data-name="Exam Room Workshop" data-cat="clinical" data-th="ห้องตรวจ">
-      <div class="card-header"><div class="card-icon">EX</div><div><div class="card-title">Exam Room Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129658;</div><div><div class="card-title">Exam Room Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้องตรวจ &mdash; ER, Vital Sign, CC, Diag, PE, LAB, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">Exam Room</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>
@@ -723,7 +724,7 @@
 
     <!-- Operating Room -->
     <a class="card purple" href="#" onclick="openDashboard('bms-ws-operating-room.html',event)" data-name="Operating Room Workshop" data-cat="support" data-th="ห้องผ่าตัด">
-      <div class="card-header"><div class="card-icon">OR</div><div><div class="card-title">Operating Room Workshop</div><span class="card-version">v1.0</span></div></div>
+      <div class="card-header"><div class="card-icon">&#129656;</div><div><div class="card-title">Operating Room Workshop</div><span class="card-version">v1.0</span></div></div>
       <div class="card-desc">ระบบงานห้องผ่าตัด &mdash; รายการ, ทีม, ชิ้นเนื้อ, Visit List, สั่งยา</div>
       <div class="card-tags"><span class="card-tag">OR</span></div>
       <div class="card-footer"><span class="card-method">GET</span><span class="card-open">Open &rarr;</span></div>

@@ -9,97 +9,99 @@
   :root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--text:#e6edf3;--text-muted:#7d8590;--primary:#1f6feb;--primary-glow:rgba(31,111,235,.15);--success:#3fb950;--success-bg:rgba(63,185,80,.1);--error:#f85149;--error-bg:rgba(248,81,73,.1);--warn:#d29922;--accent:#58a6ff;--teal:#39d353;--purple:#bc8cff;--orange:#ffa657;--pink:#f778ba;--cyan:#79c0ff;--color-scheme:dark}
   [data-theme="light"]{--bg:#f6f8fa;--surface:#ffffff;--surface2:#f0f2f5;--border:#d0d7de;--text:#1f2328;--text-muted:#57606a;--primary:#0969da;--primary-glow:rgba(9,105,218,.1);--success:#1a7f37;--success-bg:rgba(26,127,55,.08);--error:#cf222e;--error-bg:rgba(207,34,46,.08);--warn:#9a6700;--accent:#0550ae;--teal:#1a7f37;--purple:#8250df;--orange:#bc4c00;--pink:#bf3989;--cyan:#0550ae;--color-scheme:light}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;transition:background .3s,color .3s}
-  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100}
-  .header-logo{display:flex;align-items:center;gap:10px}
-  .logo-shield{width:32px;height:32px;background:linear-gradient(135deg,#1f6feb,#58a6ff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff}
-  .header h1{font-size:15px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;line-height:1.6;transition:background .3s,color .3s}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:16px;height:68px;position:sticky;top:0;z-index:100}
+  .header-logo{display:flex;align-items:center;gap:12px}
+  .logo-shield{width:42px;height:42px;background:linear-gradient(135deg,#1f6feb,#58a6ff);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .header h1{font-size:20px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
   .header h1 span{color:var(--cyan)}
-  .header-subtitle{font-size:11px;color:var(--text-muted);padding:2px 8px;background:var(--surface2);border-radius:4px}
+  .header-subtitle{font-size:13px;color:var(--text-muted);padding:4px 12px;background:var(--surface2);border-radius:6px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .header-spacer{flex:1}
-  .back-link{font-size:12px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:4px}
-  .back-link:hover{text-decoration:underline}
-  .conn-badge{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+  .back-link{font-size:14px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:6px;padding:7px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);transition:all .15s}
+  .back-link:hover{border-color:var(--accent);text-decoration:none}
+  .conn-badge{display:flex;align-items:center;gap:7px;padding:7px 16px;border-radius:20px;font-size:13px;font-weight:700}
   .conn-badge.disconnected{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
   .conn-badge.connected{background:var(--success-bg);color:var(--success);border:1px solid var(--success)}
-  .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-  .main{display:flex;height:calc(100vh - 56px)}
-  .sidebar{width:320px;min-width:320px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-  .sidebar-section{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px}
-  .section-title{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-  .field-group{margin-bottom:10px}
-  .field-label{font-size:11px;color:var(--text-muted);margin-bottom:3px}
-  .field-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;font-family:'JetBrains Mono',monospace}
-  .field-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-glow)}
+  .conn-dot{width:9px;height:9px;border-radius:50%;background:currentColor}
+  .main{display:flex;height:calc(100vh - 68px)}
+  .sidebar{width:360px;min-width:360px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px}
+  .sidebar-section{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px}
+  .section-title{font-size:13px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+  .field-group{margin-bottom:14px}
+  .field-label{font-size:13px;color:var(--text-muted);margin-bottom:5px}
+  .field-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:15px;font-family:'JetBrains Mono',monospace}
+  .field-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
   .field-input[type="date"]{color-scheme:var(--color-scheme)}
-  .status-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-top:6px}
-  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted)}
+  .status-row{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px}
+  .status-dot{width:9px;height:9px;border-radius:50%;background:var(--text-muted)}
   .status-dot.ok{background:var(--success)}.status-dot.err{background:var(--error)}
-  .btn{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .btn{width:100%;padding:11px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s}
   .btn:hover{border-color:var(--primary);background:var(--primary-glow)}.btn:disabled{opacity:.5;cursor:not-allowed}
   .btn.connected{background:var(--error-bg);border-color:var(--error);color:var(--error)}
-  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff;font-size:16px;padding:12px 16px}
   .btn-primary:hover{background:#388bfd}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-  .date-row{display:flex;gap:8px;align-items:flex-end}.date-row .field-group{flex:1;margin-bottom:0}
+  .date-row{display:flex;gap:10px;align-items:flex-end}.date-row .field-group{flex:1;margin-bottom:0}
   .content{flex:1;overflow:hidden;display:flex;flex-direction:column}
-  .summary-row{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap}
-  .summary-card{flex:1;min-width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;text-align:center}
-  .summary-card .val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace}
-  .summary-card .label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
-  .toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-  .toolbar-info{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)}
+  .summary-row{display:flex;gap:12px;padding:18px 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;flex-wrap:wrap}
+  .summary-card{flex:1;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:18px 12px 14px;text-align:center;position:relative}
+  .summary-card .val-row{display:flex;align-items:center;justify-content:center;gap:8px}
+  .summary-card .card-emoji{font-size:28px;line-height:1}
+  .summary-card .val{font-size:36px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.1}
+  .summary-card .label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-top:4px}
+  .toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .toolbar-info{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--text-muted)}
   .toolbar-spacer{flex:1}
-  .toolbar-btn{padding:4px 12px;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text-muted);font-size:11px;cursor:pointer}
+  .toolbar-btn{padding:7px 18px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text-muted);font-size:14px;cursor:pointer;transition:all .15s}
   .toolbar-btn:hover{color:var(--text);border-color:var(--accent)}
-  .count-badge{background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px}
-  .elapsed-badge{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+  .count-badge{background:var(--primary);color:#fff;font-size:14px;font-weight:700;padding:3px 12px;border-radius:10px}
+  .elapsed-badge{font-size:13px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
   .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
-  .tab-btn{padding:8px 16px;border:none;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+  .tab-btn{padding:12px 24px;border:none;background:none;color:var(--text-muted);font-size:15px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s}
   .tab-btn:hover{color:var(--text)}.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
   .tab-content{flex:1;overflow:auto;display:none}.tab-content.active{display:block}
   .table-wrap{overflow:auto;height:100%}
-  .result-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono',monospace}
+  .result-table{width:100%;border-collapse:collapse;font-size:15px;font-family:'JetBrains Mono',monospace}
   .result-table thead{position:sticky;top:0;z-index:10}
-  .result-table th{background:var(--surface);color:var(--accent);font-size:11px;font-weight:700;text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);white-space:nowrap;letter-spacing:.3px}
-  .result-table td{padding:6px 12px;border-bottom:1px solid var(--border);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .result-table th{background:var(--surface);color:var(--accent);font-size:14px;font-weight:700;text-align:left;padding:12px 16px;border-bottom:2px solid var(--border);white-space:nowrap;letter-spacing:.3px}
+  .result-table td{padding:10px 16px;border-bottom:1px solid var(--border);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
   .result-table tr:hover td{background:var(--surface2)}
-  .result-table tfoot td{background:var(--surface2);font-weight:700;border-top:2px solid var(--border)}
-  .null-val{color:var(--text-muted);font-style:italic}.num-val{color:var(--teal)}
+  .result-table tfoot td{background:var(--surface2);font-weight:700;border-top:2px solid var(--border);font-size:15px}
+  .null-val{color:var(--text-muted);font-style:italic}.num-val{color:var(--teal);font-weight:700;font-size:16px}
   .sql-wrap{display:flex;flex-direction:column;height:100%}
-  .sql-toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
-  .sql-status{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
+  .sql-toolbar{display:flex;align-items:center;gap:12px;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+  .sql-status{font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text-muted)}
   .sql-status.modified{color:var(--warn)}.sql-status.saved{color:var(--success)}
-  .sql-editor{flex:1;width:100%;background:var(--bg);color:var(--text);border:none;padding:16px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;resize:none;outline:none;tab-size:2}
+  .sql-editor{flex:1;width:100%;background:var(--bg);color:var(--text);border:none;padding:24px;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.8;resize:none;outline:none;tab-size:2}
   .sql-editor:focus{box-shadow:inset 0 0 0 1px var(--primary)}
-  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;text-align:center}
-  .empty-icon{width:56px;height:56px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--cyan);margin-bottom:12px}
-  .empty-title{font-size:15px;font-weight:700;margin-bottom:4px}
-  .empty-sub{font-size:12px;color:var(--text-muted);line-height:1.8}
-  .error-view{padding:24px;text-align:center}
-  .error-code{font-size:13px;color:var(--error);font-weight:700;margin-bottom:4px}
-  .error-msg{font-size:12px;color:var(--text-muted);white-space:pre-wrap}
+  .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:56px;text-align:center}
+  .empty-icon{width:88px;height:88px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:42px;color:var(--cyan);margin-bottom:20px}
+  .empty-title{font-size:22px;font-weight:700;margin-bottom:8px}
+  .empty-sub{font-size:16px;color:var(--text-muted);line-height:1.8}
+  .error-view{padding:40px;text-align:center}
+  .error-code{font-size:18px;color:var(--error);font-weight:700;margin-bottom:8px}
+  .error-msg{font-size:15px;color:var(--text-muted);white-space:pre-wrap}
   .spinner{display:inline-block;animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  .toast-wrap{position:fixed;bottom:16px;right:16px;z-index:1000;display:flex;flex-direction:column;gap:8px}
-  .toast{padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;animation:slideIn .3s ease;max-width:380px}
+  .toast-wrap{position:fixed;bottom:20px;right:20px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+  .toast{padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;animation:slideIn .3s ease;max-width:420px}
   .toast.ok{background:var(--success-bg);color:var(--success);border:1px solid var(--success)}
   .toast.err{background:var(--error-bg);color:var(--error);border:1px solid var(--error)}
   .toast.info{background:var(--surface2);color:var(--text-muted);border:1px solid var(--border)}
   @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-  .settings-toggle{padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text-muted);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
+  .settings-toggle{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text-muted);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s}
   .settings-toggle:hover{border-color:var(--accent);color:var(--text)}
   .settings-toggle.active{border-color:var(--primary);color:var(--accent);background:var(--primary-glow)}
   .sidebar-section.collapsible{display:none}.sidebar-section.collapsible.open{display:block}
-  .theme-btn{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text-muted);font-size:14px;cursor:pointer;transition:all .15s;line-height:1;display:flex;align-items:center;gap:4px}
+  .theme-btn{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text-muted);font-size:16px;cursor:pointer;transition:all .15s;line-height:1;display:flex;align-items:center;gap:5px}
   .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .theme-btn .lbl{font-size:11px;font-family:'Sarabun',sans-serif}
+  .theme-btn .lbl{font-size:12px;font-family:'Sarabun',sans-serif}
   .header,.sidebar,.sidebar-section,.content,.toolbar,.tabs,.summary-row,.summary-card,.field-input,.btn,.settings-toggle,.sql-editor,.sql-toolbar,.toast,.empty-icon,.result-table th,.result-table td,.result-table tfoot td{transition:background .3s,border-color .3s,color .3s}
   @media(max-width:900px){.main{flex-direction:column}.sidebar{width:100%;min-width:auto;max-height:300px;border-right:none;border-bottom:1px solid var(--border)}}
 </style>
 </head>
 <body>
 <div class="header">
-  <div class="header-logo"><div class="logo-shield">TM</div><h1>Thai Medicine <span>Workshop</span></h1></div>
+  <div class="header-logo"><div class="logo-shield">&#127807;</div><h1>Thai Medicine <span>Workshop</span></h1></div>
   <span class="header-subtitle">สรุปการทำ Work Shop - ระบบงานแพทย์แผนไทย</span>
   <div class="header-spacer"></div>
   <a class="back-link" href="index_workshop.html">&larr; Workshop Hub</a>
@@ -110,14 +112,14 @@
 <div class="main">
   <div class="sidebar">
     <div class="sidebar-section collapsible" id="sectionSession">
-      <div class="section-title">BMS Session</div>
+      <div class="section-title">&#128273; BMS Session</div>
       <div class="field-group"><div class="field-label">Session ID (GUID)</div><input type="text" class="field-input" id="sessionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
       <div class="status-row"><div class="status-dot" id="sessionDot"></div><span id="sessionStatusTxt" style="color:var(--text-muted)">No Session ID</span></div>
       <div id="sessionUserInfo" style="display:none;margin-top:8px;font-size:12px"></div>
       <button class="btn" id="connectBtn" onclick="handleConnect()" style="margin-top:10px">Connect Session</button>
     </div>
     <div class="sidebar-section">
-      <div class="section-title">Date Filter</div>
+      <div class="section-title">&#128197; Date Filter</div>
       <div class="date-row"><div class="field-group"><div class="field-label">จากวันที่</div><input type="date" class="field-input" id="dateFrom"></div><div class="field-group"><div class="field-label">ถึงวันที่</div><input type="date" class="field-input" id="dateTo"></div></div>
       <div style="display:flex;gap:4px;margin-top:8px"><button class="toolbar-btn" style="flex:1" onclick="setDatePreset('today')">วันนี้</button><button class="toolbar-btn" style="flex:1" onclick="setDatePreset('yesterday')">เมื่อวาน</button><button class="toolbar-btn" style="flex:1" onclick="setDatePreset('week')">7 วัน</button><button class="toolbar-btn" style="flex:1" onclick="setDatePreset('month')">30 วัน</button></div>
     </div>
@@ -125,12 +127,12 @@
   </div>
   <div class="content">
     <div class="summary-row" id="summaryRow" style="display:none">
-      <div class="summary-card"><div class="val" style="color:var(--accent)" id="sumStaff">0</div><div class="label">Staff</div></div>
-      <div class="summary-card" style=""><div class="val" style="color:var(--accent)" id="sum_bp_d">0</div><div class="label">Vital Sign</div></div>
-      <div class="summary-card" style=""><div class="val" style="color:var(--teal)" id="sum_cc_d">0</div><div class="label">CC</div></div>
-      <div class="summary-card" style=""><div class="val" style="color:var(--purple)" id="sum_hpi_d">0</div><div class="label">HPI</div></div>
-      <div class="summary-card" style=""><div class="val" style="color:var(--orange)" id="sum_dx_d">0</div><div class="label">Diag</div></div>
-      <div class="summary-card" style=""><div class="val" style="color:var(--pink)" id="sum_dp_d">0</div><div class="label">หัตถการ</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#128101;</span><div class="val" style="color:var(--accent)" id="sumStaff">0</div></div><div class="label">Staff</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#128203;</span><div class="val" style="color:var(--accent)" id="sum_bp_d">0</div></div><div class="label">Vital Sign</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#129514;</span><div class="val" style="color:var(--teal)" id="sum_cc_d">0</div></div><div class="label">CC</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#128200;</span><div class="val" style="color:var(--purple)" id="sum_hpi_d">0</div></div><div class="label">HPI</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#128736;</span><div class="val" style="color:var(--orange)" id="sum_dx_d">0</div></div><div class="label">Diag</div></div>
+      <div class="summary-card"><div class="val-row"><span class="card-emoji">&#128202;</span><div class="val" style="color:var(--pink)" id="sum_dp_d">0</div></div><div class="label">หัตถการ</div></div>
     </div>
     <div class="toolbar" id="resultToolbar" style="display:none">
       <div class="toolbar-info"><span>Rows:</span><span class="count-badge" id="rowCount">0</span><span class="elapsed-badge" id="elapsedTime"></span></div>
@@ -139,11 +141,11 @@
       <button class="toolbar-btn" onclick="copySql()">Copy SQL</button>
     </div>
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('table',this)">Table</button>
-      <button class="tab-btn" onclick="showTab('sql',this)">SQL Source</button>
+      <button class="tab-btn active" onclick="showTab('table',this)">&#128202; Table</button>
+      <button class="tab-btn" onclick="showTab('sql',this)">&#128190; SQL Source</button>
     </div>
     <div class="tab-content active" id="tab-table">
-      <div class="empty-state" id="emptyState"><div class="empty-icon">TM</div><div class="empty-title">Thai Medicine Workshop</div><div class="empty-sub">สรุปการทำ Work Shop - ระบบงานแพทย์แผนไทย<br><br>1. กรอก BMS Session ID แล้วกด Connect<br>2. เลือกช่วงวันที่<br>3. กดปุ่ม Query Data</div></div>
+      <div class="empty-state" id="emptyState"><div class="empty-icon">&#127807;</div><div class="empty-title">Thai Medicine Workshop</div><div class="empty-sub">สรุปการทำ Work Shop - ระบบงานแพทย์แผนไทย<br><br>1. กรอก BMS Session ID แล้วกด Connect<br>2. เลือกช่วงวันที่<br>3. กดปุ่ม Query Data</div></div>
       <div class="table-wrap" id="tableWrap" style="display:none"></div>
     </div>
     <div class="tab-content" id="tab-sql">

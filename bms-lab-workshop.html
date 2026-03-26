@@ -50,7 +50,7 @@
     color: var(--text);
     transition: background 0.3s, color 0.3s;
     min-height: 100vh;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.6;
   }
 
@@ -62,36 +62,38 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    height: 56px;
+    height: 68px;
     position: sticky;
     top: 0;
     z-index: 100;
   }
-  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .header-logo { display: flex; align-items: center; gap: 12px; }
   .logo-shield {
-    width: 32px; height: 32px;
+    width: 42px; height: 42px;
     background: linear-gradient(135deg, #1f6feb, #58a6ff);
-    border-radius: 8px;
+    border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff;
+    font-size: 22px;
   }
-  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
   .header h1 span { color: var(--cyan); }
   .header-subtitle {
-    font-size: 11px; color: var(--text-muted);
-    padding: 2px 8px; background: var(--surface2); border-radius: 4px;
+    font-size: 12px; color: var(--text-muted);
+    padding: 3px 10px; background: var(--surface2); border-radius: 6px;
   }
   .header-spacer { flex: 1; }
   .back-link {
-    font-size: 12px; color: var(--accent); text-decoration: none;
-    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; color: var(--accent); text-decoration: none;
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface2); transition: all 0.15s;
   }
-  .back-link:hover { text-decoration: underline; }
+  .back-link:hover { border-color: var(--accent); text-decoration: none; }
 
   .conn-badge {
     display: flex; align-items: center; gap: 6px;
-    padding: 4px 12px; border-radius: 20px;
-    font-size: 11px; font-weight: 700;
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 700;
   }
   .conn-badge.disconnected {
     background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border);
@@ -106,7 +108,7 @@
   /* Layout */
   .main {
     display: flex;
-    height: calc(100vh - 56px);
+    height: calc(100vh - 68px);
   }
 
   /* Sidebar */
@@ -215,14 +217,20 @@
     padding: 8px 12px;
     text-align: center;
   }
+  .summary-card .val-row {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .summary-card .card-emoji {
+    font-size: 28px; line-height: 1;
+  }
   .summary-card .val {
-    font-size: 20px; font-weight: 700;
+    font-size: 36px; font-weight: 700; line-height: 1.1;
     font-family: 'JetBrains Mono', monospace;
     color: var(--accent);
   }
   .summary-card .label {
-    font-size: 10px; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 0.3px;
+    font-size: 12px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px;
   }
   .summary-card.staff .val { color: var(--accent); }
   .summary-card.hn .val { color: var(--teal); }
@@ -279,11 +287,11 @@
     flex-shrink: 0;
   }
   .tab-btn {
-    padding: 8px 16px;
+    padding: 12px 24px;
     border: none;
     background: none;
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     border-bottom: 2px solid transparent;
@@ -305,14 +313,14 @@
   .result-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 15px;
     font-family: 'JetBrains Mono', monospace;
   }
   .result-table thead { position: sticky; top: 0; z-index: 10; }
   .result-table th {
     background: var(--surface);
     color: var(--accent);
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
     text-align: left;
     padding: 8px 12px;
@@ -552,7 +560,7 @@
 <!-- Header -->
 <div class="header">
   <div class="header-logo">
-    <div class="logo-shield">WS</div>
+    <div class="logo-shield">&#129514;</div>
     <h1>LAB Workshop <span>Summary</span></h1>
   </div>
   <span class="header-subtitle">สรุปการทำ Work Shop ของการอบรมระบบงานห้อง LAB</span>
@@ -572,7 +580,7 @@
   <div class="sidebar">
     <!-- Session -->
     <div class="sidebar-section collapsible" id="sectionSession">
-      <div class="section-title">BMS Session</div>
+      <div class="section-title">&#128273; BMS Session</div>
       <div class="field-group">
         <div class="field-label">Session ID (GUID)</div>
         <input type="text" class="field-input" id="sessionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
@@ -587,7 +595,7 @@
 
     <!-- Date Filter -->
     <div class="sidebar-section">
-      <div class="section-title">Date Filter</div>
+      <div class="section-title">&#128197; Date Filter</div>
       <div class="date-row">
         <div class="field-group">
           <div class="field-label">จากวันที่</div>
@@ -615,7 +623,7 @@
 
     <!-- Info -->
     <div class="sidebar-section">
-      <div class="section-title">About</div>
+      <div class="section-title">&#9432; About</div>
       <div style="font-size:11px; color:var(--text-muted); line-height:1.8;">
         สรุปจำนวนงานของเจ้าหน้าที่ห้อง LAB<br>
         แยกตาม: สั่ง Lab / รับ Specimen / รายงานผล<br>
@@ -630,11 +638,11 @@
   <div class="content">
     <!-- Summary -->
     <div class="summary-row" id="summaryRow" style="display:none">
-      <div class="summary-card staff"><div class="val" id="sumStaff">0</div><div class="label">Staff</div></div>
-      <div class="summary-card hn"><div class="val" id="sumHn">0</div><div class="label">HN (สั่ง)</div></div>
-      <div class="summary-card order"><div class="val" id="sumOrder">0</div><div class="label">สั่ง Lab</div></div>
-      <div class="summary-card receive"><div class="val" id="sumReceive">0</div><div class="label">รับ Specimen</div></div>
-      <div class="summary-card report"><div class="val" id="sumReport">0</div><div class="label">รายงานผล</div></div>
+      <div class="summary-card staff"><div class="val-row"><span class="card-emoji">&#128101;</span><div class="val" id="sumStaff">0</div></div><div class="label">Staff</div></div>
+      <div class="summary-card hn"><div class="val-row"><span class="card-emoji">&#128100;</span><div class="val" id="sumHn">0</div></div><div class="label">HN (สั่ง)</div></div>
+      <div class="summary-card order"><div class="val-row"><span class="card-emoji">&#129514;</span><div class="val" id="sumOrder">0</div></div><div class="label">สั่ง Lab</div></div>
+      <div class="summary-card receive"><div class="val-row"><span class="card-emoji">&#128203;</span><div class="val" id="sumReceive">0</div></div><div class="label">รับ Specimen</div></div>
+      <div class="summary-card report"><div class="val-row"><span class="card-emoji">&#128200;</span><div class="val" id="sumReport">0</div></div><div class="label">รายงานผล</div></div>
     </div>
 
     <!-- Toolbar -->
@@ -651,15 +659,15 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('table', this)">Table</button>
-      <button class="tab-btn" onclick="showTab('chart', this)">Chart</button>
-      <button class="tab-btn" onclick="showTab('sql', this)">SQL Source</button>
+      <button class="tab-btn active" onclick="showTab('table', this)">&#128202; Table</button>
+      <button class="tab-btn" onclick="showTab('chart', this)">&#128200; Chart</button>
+      <button class="tab-btn" onclick="showTab('sql', this)">&#128190; SQL Source</button>
     </div>
 
     <!-- Tab: Table -->
     <div class="tab-content active" id="tab-table">
       <div class="empty-state" id="emptyState">
-        <div class="empty-icon">WS</div>
+        <div class="empty-icon">&#129514;</div>
         <div class="empty-title">LAB Workshop Summary</div>
         <div class="empty-sub">
           สรุปการทำ Work Shop ของการอบรมระบบงานห้อง LAB<br><br>
@@ -675,7 +683,7 @@
     <div class="tab-content" id="tab-chart">
       <div class="chart-wrap" id="chartWrap">
         <div class="empty-state" style="padding:30px">
-          <div class="empty-icon">WS</div>
+          <div class="empty-icon">&#129514;</div>
           <div class="empty-title">Chart</div>
           <div class="empty-sub">Query ข้อมูลก่อนเพื่อดู Chart</div>
         </div>
@@ -1300,7 +1308,7 @@ function renderSummary(data) {
 function renderChart(data) {
   const wrap = document.getElementById('chartWrap');
   if (data.length === 0) {
-    wrap.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-icon">WS</div><div class="empty-title">No Data</div></div>';
+    wrap.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-icon">&#129514;</div><div class="empty-title">No Data</div></div>';
     return;
   }
 
