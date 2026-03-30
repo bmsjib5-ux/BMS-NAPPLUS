@@ -1467,8 +1467,9 @@ async function fetchAndConnectNapplus() {
     clearTimeout(timeoutId);
     const data = await res.json();
 
-    if (data.MessageCode === 200 && data.results && data.results.length > 0) {
-      const napplusKey = data.results[0].sys_var || '';
+    const rows = data.data || data.result?.data || [];
+    if (data.MessageCode === 200 && rows.length > 0) {
+      const napplusKey = rows[0].sys_var || '';
       if (napplusKey) {
         document.getElementById('apiKey').value = napplusKey;
         saveNapplusConfig();
