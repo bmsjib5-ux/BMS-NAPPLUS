@@ -179,12 +179,12 @@ function setDatePreset(p){const n=new Date();let f=new Date(),t=new Date();if(p=
 function fmtD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function buildDefaultSql(){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return `SELECT p.physic_plan_staff as staff, u.name,
   count(distinct ppd.physic_plan_detail_id) as dp_o,
-  (SELECT count(opdscreen_cc_list_id) FROM opdscreen_cc_list d WHERE d.staff = p.physic_plan_staff AND d.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as cc_o,
-  (SELECT count(o.vn) FROM opdscreen_cc_list d LEFT JOIN opdscreen o ON o.vn = d.vn WHERE d.staff = p.physic_plan_staff AND (o.bpd is not null or bps is not null) AND d.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as bp_o,
-  (SELECT count(o.vn) FROM opdscreen_cc_list d LEFT JOIN opdscreen o ON o.vn = d.vn WHERE d.staff = p.physic_plan_staff AND o.pmh is not null AND d.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as pmh_o,
-  (SELECT count(lh.lab_order_number) FROM lab_head lh WHERE lh.order_staff = p.physic_plan_staff AND lh.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as lab_o,
+  (SELECT count(opdscreen_cc_list_id) FROM opdscreen_cc_list d WHERE d.staff = p.physic_plan_staff AND d.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as cc_o,
+  (SELECT count(o.vn) FROM opdscreen_cc_list d LEFT JOIN opdscreen o ON o.vn = d.vn WHERE d.staff = p.physic_plan_staff AND (o.bpd is not null or bps is not null) AND d.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as bp_o,
+  (SELECT count(o.vn) FROM opdscreen_cc_list d LEFT JOIN opdscreen o ON o.vn = d.vn WHERE d.staff = p.physic_plan_staff AND o.pmh is not null AND d.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as pmh_o,
+  (SELECT count(lh.lab_order_number) FROM lab_head lh WHERE lh.order_staff = p.physic_plan_staff AND lh.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as lab_o,
   (SELECT count(x.xn) FROM xray_report x WHERE x.request_staff = p.physic_plan_staff AND x.order_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as xray_o,
-  (SELECT count(distinct o.vn) FROM oapp o WHERE o.app_user = p.physic_plan_staff AND o.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as oapp_o,
+  (SELECT count(distinct o.vn) FROM oapp o WHERE o.app_user = p.physic_plan_staff AND o.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as oapp_o,
   (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '1%') as opi1_o,
   (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '3%') as opi3_o
 FROM physic_plan p

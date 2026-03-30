@@ -200,7 +200,7 @@ FROM (
   LEFT JOIN lab_head lh ON d.vn = lh.vn LEFT JOIN xray_head x ON d.vn = x.vn
   LEFT JOIN oapp o ON d.vn = o.vn LEFT JOIN opitemrece opi ON d.vn = opi.vn
   LEFT JOIN doctor_operation dp ON d.vn = dp.vn LEFT JOIN doctor dc ON u.doctorcode = dc.code
-  WHERE d.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
+  WHERE d.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
     AND u.name NOT ILIKE '%BMS%' AND dc.position_id <> '1'
     AND d.staff NOT IN('healthmed','psy','opd')
 ) tt GROUP BY tt.staff, tt.name`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}

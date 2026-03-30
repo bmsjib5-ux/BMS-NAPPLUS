@@ -199,7 +199,7 @@ FROM (
   LEFT JOIN ipt_nurse_oper dp ON dp.staff = d.staff AND dp.entry_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
   LEFT JOIN lab_head lh ON lh.order_staff = d.staff AND lh.entry_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
   LEFT JOIN xray_report x ON x.request_staff = d.staff AND x.order_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
-  LEFT JOIN oapp o ON o.app_user = d.staff AND o.update_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
+  LEFT JOIN oapp o ON o.app_user = d.staff AND o.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
   LEFT JOIN blb_request bb ON bb.staff = d.staff AND bb.last_update BETWEEN '{dateFrom}' AND '{dateTo}'
   LEFT JOIN (SELECT i.an, l.staff FROM ipt i, officer_activity_log l WHERE i.an = l.officer_activity_log_key_value AND officer_activity_log_table = 'ipt' AND officer_activity_log_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND i.confirm_discharge = 'Y') ip ON ip.staff = d.staff
   LEFT JOIN ipt_labour_infant li ON d.staff = li.entry_staff AND li.birth_date BETWEEN '{dateFrom}'::date AND '{dateTo}'::date

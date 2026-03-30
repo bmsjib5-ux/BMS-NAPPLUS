@@ -184,7 +184,7 @@ function buildDefaultSql(){const df=document.getElementById('dateFrom').value||t
   (SELECT count(distinct oa.vn) FROM ovst_service_time ost JOIN oapp oa ON oa.visit_vn = ost.vn WHERE ost.service_begin_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND ost.staff = o.officer_login_name AND ost.ovst_service_time_type_code LIKE 'OPD-NEW-VISIT%') AS new_visit_oapp,
   (SELECT count(distinct anvn) FROM (SELECT an AS anvn FROM ipt_pttype_check WHERE pttype_check_staff = o.officer_login_name AND pttype_check_datetime BETWEEN '{dateFrom}' AND '{dateTo}' UNION SELECT vn AS anvn FROM ovst_seq WHERE pttype_check_staff = o.officer_login_name AND pttype_check_datetime BETWEEN '{dateFrom}' AND '{dateTo}') tmp) AS pttype_check,
   (SELECT count(distinct r.vn) FROM ovst_service_time ost JOIN referin r ON r.vn = ost.vn WHERE ost.service_begin_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND ost.staff = o.officer_login_name AND ost.ovst_service_time_type_code LIKE 'OPD-NEW-VISIT%') AS referin,
-  (SELECT count(distinct vn) FROM (SELECT vn, count(*) FROM visit_pttype WHERE update_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND staff = o.officer_login_name GROUP BY vn HAVING count(*) > 1) tmp) AS count_pttype
+  (SELECT count(distinct vn) FROM (SELECT vn, count(*) FROM visit_pttype WHERE update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}' AND staff = o.officer_login_name GROUP BY vn HAVING count(*) > 1) tmp) AS count_pttype
 FROM officer o
 INNER JOIN officer_group_list ogl ON o.officer_id = ogl.officer_id
 INNER JOIN officer_group og ON ogl.officer_group_id = og.officer_group_id
