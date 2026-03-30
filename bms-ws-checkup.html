@@ -185,12 +185,14 @@ function buildDefaultSql(){const df=document.getElementById('dateFrom').value||t
   COUNT(DISTINCT (CASE WHEN xr.xn IS NOT NULL THEN xr.hn END)) AS count_xray,
   COUNT(DISTINCT (CASE WHEN oapp.hn IS NOT NULL THEN oapp.hn END)) AS count_oapp
 FROM ckup_ovst ov
+LEFT JOIN ovst ON ovst.vn = ov.vn
 LEFT JOIN officer o ON o.officer_login_name = ov.staff
 LEFT JOIN opdscreen op ON ov.vn = op.vn
 LEFT JOIN lab_head lh ON lh.order_staff = ov.staff AND lh.vn = ov.vn
 LEFT JOIN xray_report xr ON xr.request_staff = ov.staff AND xr.vn = ov.vn
 LEFT JOIN oapp ON oapp.app_user = ov.staff AND oapp.vn = ov.vn
 WHERE TO_CHAR(ov.vstdate, 'yyyy-mm-dd') BETWEEN '{dateFrom}' AND '{dateTo}'
+  AND ovst.main_dep = '099'
   AND o.officer_name NOT LIKE '%BMS%'
   AND o.officer_login_name <> 'cu'
 GROUP BY o.officer_login_name, o.officer_name`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
