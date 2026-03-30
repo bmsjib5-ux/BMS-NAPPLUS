@@ -175,7 +175,7 @@ function disconnectSession(){sessionConnected=false;sessionData=null;connectionC
 function updateSessionStatus(){const v=document.getElementById('sessionId').value.trim();const d=document.getElementById('sessionDot');const t=document.getElementById('sessionStatusTxt');const g=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;if(!v){d.className='status-dot';t.textContent='No Session ID';t.style.color='var(--text-muted)'}else if(g.test(v)){d.className='status-dot ok';t.textContent='Valid GUID';t.style.color='var(--success)'}else{d.className='status-dot err';t.textContent='Invalid format';t.style.color='var(--error)'}}
 function setDatePreset(p){const n=new Date();let f=new Date(),t=new Date();if(p==='yesterday'){f.setDate(n.getDate()-1);t.setDate(n.getDate()-1)}else if(p==='week')f.setDate(n.getDate()-6);else if(p==='month')f.setDate(n.getDate()-29);document.getElementById('dateFrom').value=fmtD(f);document.getElementById('dateTo').value=fmtD(t);if(customSql===null)updateSqlEditor()}
 function fmtD(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function buildDefaultSql(){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return `SELECT u.name, u.loginname,
+function buildDefaultSql(){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return `SELECT CONVERT(CAST(CONVERT(u.name USING latin1) AS BINARY) USING utf8) as name, u.loginname,
   COUNT(DISTINCT x.vn) AS cc_pt,
   COUNT(r.xn) AS cc_order,
   (SELECT COUNT(DISTINCT officer_activity_log_key_value) FROM officer_activity_log
