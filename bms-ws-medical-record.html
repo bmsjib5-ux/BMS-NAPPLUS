@@ -190,7 +190,7 @@ function buildDefaultSql(){const df=document.getElementById('dateFrom').value||t
 FROM officer o
 INNER JOIN officer_group_list ogl ON o.officer_id = ogl.officer_id
 INNER JOIN officer_group og ON ogl.officer_group_id = og.officer_group_id
-WHERE (og.officer_group_name LIKE '%เวชระเบียน/ห้องบัตร%' OR og.officer_group_name LIKE '%เวชระเบียน%')
+WHERE og.officer_group_id = 2
   AND o.officer_active = 'Y'
   AND lower(o.officer_name) NOT LIKE '%bms%'
 GROUP BY o.officer_login_name, o.officer_name) AS sub
