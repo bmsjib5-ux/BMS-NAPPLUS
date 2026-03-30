@@ -193,8 +193,8 @@ INNER JOIN officer_group og ON ogl.officer_group_id = og.officer_group_id
 WHERE og.officer_group_id = 2
   AND o.officer_active = 'Y'
   AND lower(o.officer_name) NOT LIKE '%bms%'
-GROUP BY o.officer_login_name, o.officer_name) AS sub
-WHERE sub.new_hn > 0 OR sub.pttype > 0 OR sub.new_visit > 0 OR sub.new_visit_oapp > 0 OR sub.pttype_check > 0 OR sub.referin > 0 OR sub.count_pttype > 0`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
+GROUP BY o.officer_login_name, o.officer_name) AS reg
+WHERE reg.new_hn > 0 OR reg.pttype > 0 OR reg.new_visit > 0 OR reg.new_visit_oapp > 0 OR reg.pttype_check > 0 OR reg.referin > 0 OR reg.count_pttype > 0`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
 function buildSql(){if(customSql!==null){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return customSql.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}return buildDefaultSql()}
 function updateSqlEditor(){const e=document.getElementById('sqlEditor');if(!e)return;e.value=customSql!==null?customSql:buildDefaultSql();updateSqlStatus()}
 function updateSqlStatus(){const s=document.getElementById('sqlStatus'),sb=document.getElementById('sqlSaveBtn'),rb=document.getElementById('sqlResetBtn');if(customSql!==null){s.textContent=sqlModified?'modified (unsaved)':'custom (saved)';s.className='sql-status '+(sqlModified?'modified':'saved');sb.style.display=sqlModified?'':'none';rb.style.display=''}else if(sqlModified){s.textContent='modified (unsaved)';s.className='sql-status modified';sb.style.display='';rb.style.display=''}else{s.textContent='default';s.className='sql-status';sb.style.display='none';rb.style.display='none'}}
