@@ -407,35 +407,37 @@
   .bar-chart {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
   }
   .bar-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 12px;
+    gap: 14px;
+    font-size: 19px;
   }
   .bar-label {
-    width: 160px;
-    min-width: 160px;
+    width: 280px;
+    min-width: 280px;
     text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--text-muted);
+    color: var(--text);
+    font-size: 19px;
+    font-weight: 600;
   }
   .bar-track {
     flex: 1;
-    height: 22px;
+    height: 40px;
     background: var(--surface2);
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     display: flex;
     gap: 1px;
   }
   .bar-seg {
     height: 100%;
-    border-radius: 2px;
+    border-radius: 3px;
     min-width: 2px;
     transition: width 0.4s ease;
   }
@@ -445,22 +447,24 @@
   .bar-seg.report { background: var(--pink); }
   .bar-val {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    min-width: 100px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 120px;
   }
   .chart-legend {
     display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    font-size: 11px;
-    color: var(--text-muted);
+    gap: 24px;
+    margin-bottom: 20px;
+    font-size: 19px;
+    color: var(--text);
+    font-weight: 600;
   }
   .legend-item {
-    display: flex; align-items: center; gap: 4px;
+    display: flex; align-items: center; gap: 8px;
   }
   .legend-dot {
-    width: 10px; height: 10px; border-radius: 2px;
+    width: 16px; height: 16px; border-radius: 3px;
   }
 
   /* Empty state */
