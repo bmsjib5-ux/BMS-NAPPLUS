@@ -188,6 +188,7 @@ function buildDefaultSql(){const df=document.getElementById('dateFrom').value||t
   INNER JOIN officer_group_list ON officer.officer_id = officer_group_list.officer_id
   INNER JOIN officer_group ON officer_group.officer_group_id = officer_group_list.officer_group_id
   WHERE officer_group.officer_group_name IN ('User : Blood Bank','User : ห้อง LAB')
+  AND lower(officer.officer_name) NOT LIKE '%bms%'
   GROUP BY officer.officer_id, officer.officer_doctor_code, officer.officer_login_name, officer.officer_name
 ) AS cc
 WHERE cc.cc_pt > 0 OR cc_request > 0 OR cc_receive > 0 OR cc_cross > 0 OR cc_pay > 0`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
