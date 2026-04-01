@@ -212,6 +212,7 @@ FROM (
   WHERE d.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
     AND ofr.officer_name NOT LIKE '%BMS%' AND dc.position_id <> '1'
 and d.staff not in(SELECT dt.staff FROM dtmain dt WHERE dt.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}' GROUP BY dt.staff)
+AND d.staff not in(SELECT physic_plan_staff FROM physic_plan WHERE physic_plan_lastupdate::date BETWEEN '{dateFrom}' AND '{dateTo}' GROUP BY physic_plan_staff)
 ) tt GROUP BY tt.staff, tt.officer_name`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
 function buildSql(){if(customSql!==null){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return customSql.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}return buildDefaultSql()}
 function updateSqlEditor(){const e=document.getElementById('sqlEditor');if(!e)return;e.value=customSql!==null?customSql:buildDefaultSql();updateSqlStatus()}

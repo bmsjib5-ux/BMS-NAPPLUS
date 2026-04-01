@@ -189,12 +189,12 @@ function buildDefaultSql(){const df=document.getElementById('dateFrom').value||t
   (SELECT count(lh.lab_order_number) FROM lab_head lh WHERE lh.order_staff = p.physic_plan_staff AND lh.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as lab_o,
   (SELECT count(x.xn) FROM xray_report x WHERE x.request_staff = p.physic_plan_staff AND x.order_datetime BETWEEN '{dateFrom}' AND '{dateTo}') as xray_o,
   (SELECT count(distinct o.vn) FROM oapp o WHERE o.app_user = p.physic_plan_staff AND o.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}') as oapp_o,
-  (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '1%') as opi1_o,
-  (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '3%') as opi3_o
+  (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified::date BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '1%') as opi1_o,
+  (SELECT count(distinct opi.icode) FROM opitemrece opi WHERE opi.staff = p.physic_plan_staff AND opi.last_modified::date BETWEEN '{dateFrom}' AND '{dateTo}' AND opi.icode like '3%') as opi3_o
 FROM physic_plan p
 LEFT JOIN opduser u ON u.loginname = p.physic_plan_staff
 LEFT JOIN physic_plan_detail ppd ON p.physic_plan_id = ppd.physic_plan_id
-WHERE p.physic_plan_lastupdate BETWEEN '{dateFrom}' AND '{dateTo}' AND u.name NOT LIKE '%BMS%'
+WHERE p.physic_plan_lastupdate::date BETWEEN '{dateFrom}' AND '{dateTo}' AND u.name NOT LIKE '%BMS%'
 GROUP BY p.physic_plan_staff, u.name`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
 function buildSql(){if(customSql!==null){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return customSql.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}return buildDefaultSql()}
 function updateSqlEditor(){const e=document.getElementById('sqlEditor');if(!e)return;e.value=customSql!==null?customSql:buildDefaultSql();updateSqlStatus()}
