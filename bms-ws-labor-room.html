@@ -200,14 +200,14 @@ FROM (
     li.infant_an as labor_c
   FROM iptbedmove d
   LEFT JOIN officer u ON u.officer_login_name = d.staff
-  LEFT JOIN ipt_nurse_oper dp ON dp.staff = d.staff AND dp.entry_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
-  LEFT JOIN lab_head lh ON lh.order_staff = d.staff AND lh.entry_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
-  LEFT JOIN xray_report x ON x.request_staff = d.staff AND x.order_datetime BETWEEN '{dateFrom}' AND '{dateTo}'
+  LEFT JOIN ipt_nurse_oper dp ON dp.staff = d.staff AND dp.entry_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
+  LEFT JOIN lab_head lh ON lh.order_staff = d.staff AND lh.entry_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
+  LEFT JOIN xray_report x ON x.request_staff = d.staff AND x.order_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
   LEFT JOIN oapp o ON o.app_user = d.staff AND o.update_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}'
-  LEFT JOIN blb_request bb ON bb.staff = d.staff AND bb.last_update BETWEEN '{dateFrom}' AND '{dateTo}'
-  LEFT JOIN (SELECT i.an, l.staff FROM ipt i, officer_activity_log l WHERE i.an = l.officer_activity_log_key_value AND officer_activity_log_table = 'ipt' AND officer_activity_log_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND i.confirm_discharge = 'Y') ip ON ip.staff = d.staff
+  LEFT JOIN blb_request bb ON bb.staff = d.staff AND bb.last_update::date BETWEEN '{dateFrom}' AND '{dateTo}'
+  LEFT JOIN (SELECT i.an, l.staff FROM ipt i, officer_activity_log l WHERE i.an = l.officer_activity_log_key_value AND officer_activity_log_table = 'ipt' AND officer_activity_log_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}' AND i.confirm_discharge = 'Y') ip ON ip.staff = d.staff
   LEFT JOIN ipt_labour_infant li ON d.staff = li.entry_staff AND li.birth_date BETWEEN '{dateFrom}'::date AND '{dateTo}'::date
-  WHERE d.entry_datetime BETWEEN '{dateFrom}' AND '{dateTo}' AND u.officer_name NOT LIKE '%BMS%'
+  WHERE d.entry_datetime::date BETWEEN '{dateFrom}' AND '{dateTo}' AND u.officer_name NOT LIKE '%BMS%'
 ) tt GROUP BY tt.staff, tt.name`.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}
 function buildSql(){if(customSql!==null){const df=document.getElementById('dateFrom').value||todayStr();const dt=document.getElementById('dateTo').value||todayStr();return customSql.replace(/\{dateFrom\}/g,df).replace(/\{dateTo\}/g,dt)}return buildDefaultSql()}
 function updateSqlEditor(){const e=document.getElementById('sqlEditor');if(!e)return;e.value=customSql!==null?customSql:buildDefaultSql();updateSqlStatus()}
