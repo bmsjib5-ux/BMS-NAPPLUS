@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMS NAPPLUS - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8eef4;
+    --border: #d0d9e3;
+    --text: #1a2332;
+    --text-muted: #5a6b7f;
+    --primary: #0891b2;
+    --primary-glow: rgba(8,145,178,0.1);
+    --success: #059669;
+    --success-bg: rgba(5,150,105,0.08);
+    --error: #dc2626;
+    --error-bg: rgba(220,38,38,0.08);
+    --warn: #d97706;
+    --warn-bg: rgba(217,119,6,0.08);
+    --accent: #0891b2;
+    --teal: #059669;
+    --purple: #7c3aed;
+    --orange: #ea580c;
+    --cyan: #0891b2;
+
+    --c101: #dc2626;
+    --c102: #d97706;
+    --c201: #059669;
+    --c202: #7c3aed;
+    --c203: #ea580c;
+    --c204: #0891b2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  .header {
+    background: #0f2044;
+    border-bottom: 1px solid #1a3060;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-shield {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; color: #fff; }
+  .header h1 span { color: #22d3ee; }
+  .header-spacer { flex: 1; }
+
+  .conn-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+  }
+  .conn-badge.disconnected {
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15);
+  }
+  .conn-badge.connected {
+    background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3);
+  }
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #111111;
+    border-right: 1px solid #222;
+    height: calc(100vh - 56px);
+    position: fixed;
+    top: 56px;
+    left: 0;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    padding: 4px 20px 18px;
+    border-bottom: 1px solid #222;
+    margin-bottom: 12px;
+  }
+  .sidebar-brand .brand-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 10px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #999;
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+  .nav-item:hover {
+    background: #1a1a1a;
+    color: #e0e0e0;
+  }
+  .nav-item.active {
+    background: rgba(8,145,178,0.15);
+    color: #22d3ee;
+  }
+  .nav-item .nav-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    color: #888;
+  }
+  .nav-item.active .nav-icon {
+    background: var(--primary);
+    color: #fff;
+  }
+  .nav-item .nav-label {
+    line-height: 1.2;
+  }
+  .nav-item .nav-desc {
+    font-size: 10px;
+    font-weight: 400;
+    color: #666;
+    margin-top: 1px;
+  }
+  .sidebar-divider {
+    height: 1px;
+    background: #222;
+    margin: 12px 20px;
+  }
+  .sidebar-section-title {
+    padding: 0 20px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid #222;
+  }
+  .sidebar-footer .conn-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #888;
+  }
+  .sidebar-footer .conn-info .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #444;
+    flex-shrink: 0;
+  }
+  .sidebar-footer .conn-info .dot.ok { background: #10b981; }
+  .sidebar-footer .conn-info .name {
+    font-weight: 600;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sidebar-footer .conn-info .sub {
+    font-size: 10px;
+    color: #666;
+  }
+
+  /* Page wrapper with sidebar offset */
+  .page-wrapper {
+    margin-left: 220px;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Main layout */
+  .main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 24px;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .page-wrapper { margin-left: 0; }
+  }
+
+  /* Dashboard toolbar */
+  .dash-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .dash-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-right: 8px;
+  }
+  .dash-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 2px 10px;
+    background: var(--surface2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .dash-spacer { flex: 1; }
+  .dash-range-btn {
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dash-range-btn:hover { border-color: var(--accent); color: var(--text); }
+  .dash-range-btn.active { background: var(--primary-glow); border-color: var(--primary); color: var(--accent); }
+  .refresh-btn {
+    padding: 5px 16px;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .refresh-btn:hover { filter: brightness(1.1); }
+  .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+  /* Summary cards */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .s-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .s-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(8,145,178,0.1); }
+  .s-card .s-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .s-card .s-val {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.1;
+  }
+  .s-card .s-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-top: 2px;
+  }
+  .s-card .s-bar {
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    border-radius: 0 4px 4px 0;
+  }
+  .s-card.total .s-icon { background: var(--primary-glow); color: var(--accent); }
+  .s-card.total .s-val { color: var(--accent); }
+  .s-card.total .s-bar { background: var(--accent); }
+
+  .s-card.c101 .s-icon { background: rgba(239,68,68,0.15); color: var(--c101); }
+  .s-card.c101 .s-val { color: var(--c101); }
+  .s-card.c101 .s-bar { background: var(--c101); }
+
+  .s-card.c102 .s-icon { background: rgba(245,158,11,0.15); color: var(--c102); }
+  .s-card.c102 .s-val { color: var(--c102); }
+  .s-card.c102 .s-bar { background: var(--c102); }
+
+  .s-card.c201 .s-icon { background: rgba(16,185,129,0.15); color: var(--c201); }
+  .s-card.c201 .s-val { color: var(--c201); }
+  .s-card.c201 .s-bar { background: var(--c201); }
+
+  .s-card.c202 .s-icon { background: rgba(167,139,250,0.15); color: var(--c202); }
+  .s-card.c202 .s-val { color: var(--c202); }
+  .s-card.c202 .s-bar { background: var(--c202); }
+
+  .s-card.c203 .s-icon { background: rgba(251,146,60,0.15); color: var(--c203); }
+  .s-card.c203 .s-val { color: var(--c203); }
+  .s-card.c203 .s-bar { background: var(--c203); }
+
+  .s-card.c204 .s-icon { background: rgba(6,182,212,0.15); color: var(--c204); }
+  .s-card.c204 .s-val { color: var(--c204); }
+  .s-card.c204 .s-bar { background: var(--c204); }
+
+  /* Chart grid */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .chart-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-card h3 .tag {
+    font-size: 10px;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background: var(--primary-glow);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 280px;
+  }
+
+  /* Recent table */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .table-card-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .table-card-header h3 {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .table-card-header .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 10px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+  }
+  .table-card-header .spacer { flex: 1; }
+  .table-card-header .elapsed {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .dash-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .dash-table th {
+    background: var(--surface2);
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    text-align: left;
+    padding: 8px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .dash-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dash-table tr:hover td { background: var(--surface2); }
+  .dash-table .null-val { color: var(--text-muted); font-style: italic; }
+  .dash-table .type-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .type-badge.t101 { background: rgba(239,68,68,0.15); color: var(--c101); }
+  .type-badge.t102 { background: rgba(245,158,11,0.15); color: var(--c102); }
+  .type-badge.t201 { background: rgba(16,185,129,0.15); color: var(--c201); }
+  .type-badge.t202 { background: rgba(167,139,250,0.15); color: var(--c202); }
+  .type-badge.t203 { background: rgba(251,146,60,0.15); color: var(--c203); }
+  .type-badge.t204 { background: rgba(6,182,212,0.15); color: var(--c204); }
+
+  /* Empty / Loading */
+  .empty-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 40px;
+    text-align: center;
+  }
+  .empty-icon {
+    width: 64px; height: 64px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--text-muted); line-height: 2; }
+
+  .loading-overlay {
+    position: fixed;
+    top: 56px; left: 0; right: 0; bottom: 0;
+    background: rgba(240,244,248,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .loading-overlay .spinner-ring {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-overlay .loading-text {
+    font-size: 13px; color: var(--text-muted); font-weight: 600;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast-wrap {
+    position: fixed; bottom: 16px; right: 16px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toast {
+    padding: 10px 16px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    animation: slideIn 0.3s ease;
+    max-width: 380px;
+  }
+  .toast.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+  .toast.err { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); }
+  .toast.info { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .summary-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  }
+  @media (max-width: 600px) {
+    .main-content { padding: 12px; }
+    .dash-toolbar { gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-shield">&#9769;</div>
+    <h1>BMS NAPPLUS <span>Dashboard</span></h1>
+  </div>
+  <div class="header-spacer"></div>
+  <div class="conn-badge disconnected" id="connBadge">
+    <div class="conn-dot"></div>
+    <span id="connText">Not Connected</span>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">Navigation</div>
+  </div>
+  <div class="sidebar-section-title">Main</div>
+  <div class="sidebar-nav">
+    <a class="nav-item active" href="index.html">
+      <div class="nav-icon">&#9707;</div>
+      <div>
+        <div class="nav-label">Dashboard</div>
+        <div class="nav-desc">Overview & Charts</div>
+      </div>
+    </a>
+    <a class="nav-item" href="bms-napplus.html">
+      <div class="nav-icon">&#9776;</div>
+      <div>
+        <div class="nav-label">Query Viewer</div>
+        <div class="nav-desc">Query, Send Report</div>
+      </div>
+    </a>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-title">NAPPLUS API</div>
+  <div class="sidebar-nav">
+    <a class="nav-item" href="bms-napplus.html#check">
+      <div class="nav-icon">&#10003;</div>
+      <div>
+        <div class="nav-label">Lab Request</div>
+        <div class="nav-desc">get_lab_request</div>
+      </div>
+    </a>
+    <a class="nav-item" href="bms-napplus.html#result">
+      <div class="nav-icon">&#9874;</div>
+      <div>
+        <div class="nav-label">Lab Result</div>
+        <div class="nav-desc">get_lab_result</div>
+      </div>
+    </a>
+    <a class="nav-item" href="bms-napplus.html#report">
+      <div class="nav-icon">&#10148;</div>
+      <div>
+        <div class="nav-label">Send Report</div>
+        <div class="nav-desc">set_lab_result</div>
+      </div>
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="conn-info" id="sidebarConn">
+      <div class="dot" id="sidebarDot"></div>
+      <div>
+        <div class="name" id="sidebarName">Not Connected</div>
+        <div class="sub" id="sidebarHospital">-</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Page Wrapper -->
+<div class="page-wrapper">
+
+<!-- Main -->
+<div class="main-content" id="mainContent" style="display:none">
+  <!-- Toolbar -->
+  <div class="dash-toolbar">
+    <span class="dash-title">Dashboard</span>
+    <span class="dash-subtitle" id="hospitalName">-</span>
+    <div class="dash-spacer"></div>
+    <button class="dash-range-btn" data-range="today" onclick="setRange('today',this)">Today</button>
+    <button class="dash-range-btn" data-range="week" onclick="setRange('week',this)">7 Days</button>
+    <button class="dash-range-btn active" data-range="month" onclick="setRange('month',this)">30 Days</button>
+    <button class="dash-range-btn" data-range="quarter" onclick="setRange('quarter',this)">90 Days</button>
+    <button class="dash-range-btn active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Auto 60s ON</button>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadDashboard()">Refresh</button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="s-card total">
+      <div class="s-bar"></div>
+      <div class="s-icon">ALL</div>
+      <div class="s-val" id="vTotal">-</div>
+      <div class="s-label">Total Labs</div>
+    </div>
+    <div class="s-card c101">
+      <div class="s-bar"></div>
+      <div class="s-icon">101</div>
+      <div class="s-val" id="v101">-</div>
+      <div class="s-label">Anti-HIV</div>
+    </div>
+    <div class="s-card c102">
+      <div class="s-bar"></div>
+      <div class="s-icon">102</div>
+      <div class="s-val" id="v102">-</div>
+      <div class="s-label">PCR</div>
+    </div>
+    <div class="s-card c201">
+      <div class="s-bar"></div>
+      <div class="s-icon">201</div>
+      <div class="s-val" id="v201">-</div>
+      <div class="s-label">CD4</div>
+    </div>
+    <div class="s-card c202">
+      <div class="s-bar"></div>
+      <div class="s-icon">202</div>
+      <div class="s-val" id="v202">-</div>
+      <div class="s-label">Viral Load</div>
+    </div>
+    <div class="s-card c203">
+      <div class="s-bar"></div>
+      <div class="s-icon">203</div>
+      <div class="s-val" id="v203">-</div>
+      <div class="s-label">Drug Resistance</div>
+    </div>
+    <div class="s-card c204">
+      <div class="s-bar"></div>
+      <div class="s-icon">204</div>
+      <div class="s-val" id="v204">-</div>
+      <div class="s-label">Blood Chemistry</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>Lab Type Distribution <span class="tag">Donut</span></h3>
+      <div class="chart-wrap"><canvas id="chartDonut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Daily Lab Orders <span class="tag">Bar</span></h3>
+      <div class="chart-wrap"><canvas id="chartDaily"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Lab Status by Type <span class="tag">Sent vs Pending</span></h3>
+      <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Lab Trend <span class="tag">Line</span></h3>
+      <div class="chart-wrap"><canvas id="chartTrend"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Recent Table -->
+  <div class="table-card">
+    <div class="table-card-header">
+      <h3>Recent Lab Records</h3>
+      <span class="badge" id="tableCount">0</span>
+      <div class="spacer"></div>
+      <span class="elapsed" id="tableElapsed"></span>
+    </div>
+    <div style="overflow-x:auto; max-height: 420px; overflow-y: auto;">
+      <table class="dash-table" id="recentTable">
+        <thead>
+          <tr>
+            <th>Lab Type</th>
+            <th>Request Date</th>
+            <th>Patient Right</th>
+            <th>Lab Item</th>
+            <th>Test Result</th>
+            <th>Lab Request ID</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="recentBody">
+          <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:24px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    BMS NAPPLUS Dashboard &mdash; <a href="bms-napplus.html">Query Viewer</a>
+  </div>
+</div>
+
+<!-- Empty State (no session) -->
+<div id="emptyState" class="empty-state" style="min-height: calc(100vh - 56px);">
+  <div class="empty-icon">&#9769;</div>
+  <div class="empty-title">BMS NAPPLUS Dashboard</div>
+  <div class="empty-sub">
+    Dashboard จะแสดงข้อมูลอัตโนมัติเมื่อมี Session<br><br>
+    1. เปิดจากระบบ HOSxP ด้วย URL ที่มี <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);">?bms-session-id=...</code><br>
+    2. หรือเปิดจาก <a href="bms-napplus.html" style="color:var(--accent)">Query Viewer</a> แล้ว Connect Session ก่อน
+  </div>
+</div>
+
+</div><!-- /page-wrapper -->
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none">
+  <div class="spinner-ring"></div>
+  <div class="loading-text" id="loadingText">Loading Dashboard...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// == Constants ==
+const SESSION_COOKIE_NAME = 'bms-session-id';
+const SESSION_COOKIE_DAYS = 7;
+const SESSION_URL_PARAM = 'bms-session-id';
+const DEFAULT_TIMEOUT = 30000;
+const APP_NAME = 'BMS.NAPPLUS.Dashboard';
+const NAPPLUS_BASE_URL = 'https://dmis.nhso.go.th/NAPPLUSLABAPI/api';
+
+const LAB_TYPES = {
+  '101': { name: 'Anti-HIV',        color: '#ef4444' },
+  '102': { name: 'PCR',             color: '#f59e0b' },
+  '201': { name: 'CD4',             color: '#10b981' },
+  '202': { name: 'Viral Load',      color: '#a78bfa' },
+  '203': { name: 'Drug Resistance', color: '#fb923c' },
+  '204': { name: 'Blood Chemistry', color: '#06b6d4' },
+};
+
+// == State ==
+let sessionConnected = false;
+let connectionConfig = null;
+let userInfo = null;
+let napplusConnected = false;
+let napplusHcode = '';
+let napplusApiKey = '';
+let allData = [];
+let currentRange = 'month';
+
+// Chart instances
+let chartDonut, chartDaily, chartStatus, chartTrend;
+
+// == Helpers ==
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function dateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function toBEDate(dateStr) {
+  const [y, m, d] = dateStr.split('-');
+  return `${parseInt(y) + 543}${m}${d}`;
+}
+
+function fromBEDate(beStr) {
+  if (!beStr || beStr.length !== 8) return beStr;
+  const y = parseInt(beStr.substring(0, 4)) - 543;
+  const m = beStr.substring(4, 6);
+  const d = beStr.substring(6, 8);
+  return `${y}-${m}-${d}`;
+}
+
+function formatBEDisplay(beStr) {
+  if (!beStr || beStr.length !== 8) return beStr || '-';
+  return `${beStr.substring(6,8)}/${beStr.substring(4,6)}/${beStr.substring(0,4)}`;
+}
+
+function getRangeDays() {
+  switch (currentRange) {
+    case 'today': return 0;
+    case 'week': return 6;
+    case 'month': return 29;
+    case 'quarter': return 89;
+    default: return 6;
+  }
+}
+
+function showLoading(text) {
+  document.getElementById('loadingText').textContent = text || 'Loading Dashboard...';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  wrap.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// == Cookie / URL Session ==
+function getSessionCookie() {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + SESSION_COOKIE_NAME + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setSessionCookie(sessionId) {
+  const expires = new Date(Date.now() + SESSION_COOKIE_DAYS * 864e5).toUTCString();
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}; expires=${expires}; path=/${secure}; SameSite=Lax`;
+}
+
+function getSessionFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const s = urlParams.get(SESSION_URL_PARAM);
+  return s && s.trim() ? s.trim() : null;
+}
+
+function removeSessionFromUrl() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has(SESSION_URL_PARAM)) {
+    url.searchParams.delete(SESSION_URL_PARAM);
+    window.history.replaceState({}, '', url.toString());
+  }
+}
+
+// == Session Validation ==
+async function validateSession(sessionId) {
+  try {
+    const url = `https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sessionId)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      signal: controller.signal, mode: 'cors',
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) return { MessageCode: res.status, Message: `HTTP ${res.status}: ${res.statusText}` };
+    return await res.json();
+  } catch (e) {
+    return { MessageCode: 0, Message: e.name === 'AbortError' ? 'Timeout' : 'Connection Error' };
+  }
+}
+
+function extractConnectionConfig(data) {
+  const result = data.result || {};
+  const ui = result.user_info || {};
+  let apiUrl, apiAuthKey;
+
+  if (result.key_value && typeof result.key_value === 'object') {
+    apiUrl = result.key_value['hosxp.api_url'];
+    apiAuthKey = result.key_value['hosxp.api_auth_key'];
+  }
+  if (!apiUrl) apiUrl = ui['hosxp.api_url'];
+  if (!apiAuthKey) apiAuthKey = ui['hosxp.api_auth_key'];
+  if (!apiUrl) apiUrl = ui.bms_url;
+  if (!apiAuthKey) apiAuthKey = ui.bms_session_code;
+  if (!apiAuthKey && typeof result.key_value === 'string') apiAuthKey = result.key_value;
+
+  return { apiUrl: (apiUrl || '').replace(/\/$/, ''), apiAuthKey: apiAuthKey || '' };
+}
+
+// == Connect ==
+async function connectSession(sessionId) {
+  showLoading('Connecting Session...');
+
+  const data = await validateSession(sessionId);
+  if (!data || data.MessageCode !== 200) {
+    hideLoading();
+    showToast('err', data?.Message || 'Failed to validate session');
+    return false;
+  }
+
+  connectionConfig = extractConnectionConfig(data);
+  userInfo = data.result?.user_info || {};
+
+  if (!connectionConfig.apiUrl) {
+    hideLoading();
+    showToast('err', 'No API URL found in session data');
+    return false;
+  }
+
+  sessionConnected = true;
+  setSessionCookie(sessionId);
+
+  // Update UI
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge connected';
+  document.getElementById('connText').textContent = userInfo.name || 'Connected';
+
+  document.getElementById('hospitalName').textContent = userInfo.location || userInfo.name || '-';
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+
+  // Update sidebar connection info
+  document.getElementById('sidebarDot').classList.add('ok');
+  document.getElementById('sidebarName').textContent = userInfo.name || 'Connected';
+  document.getElementById('sidebarHospital').textContent = userInfo.location || '-';
+
+  // Try auto-connect NAPPLUS
+  napplusHcode = userInfo.hcode || userInfo.hospital_code || userInfo.hospcode || '';
+  await autoConnectNapplus();
+
+  hideLoading();
+  return true;
+}
+
+async function autoConnectNapplus() {
+  if (!sessionConnected || !connectionConfig || !napplusHcode) return;
+
+  try {
+    const sql = "select sys_var from sys_var where sys_name = 'NAPPLUS_KEY'";
+    const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${encodeURIComponent(APP_NAME)}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+    const res = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${connectionConfig.apiAuthKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    const rows = data.data || data.result?.data || [];
+    if (data.MessageCode === 200 && rows.length > 0 && rows[0].sys_var) {
+      napplusApiKey = rows[0].sys_var;
+      napplusConnected = true;
+    }
+  } catch (e) {
+    console.warn('Auto-fetch NAPPLUS_KEY failed:', e.message);
+  }
+
+  // fallback: localStorage
+  if (!napplusApiKey) {
+    napplusApiKey = localStorage.getItem('napplus-apikey') || '';
+    if (!napplusHcode) napplusHcode = localStorage.getItem('napplus-hcode') || '';
+    if (napplusHcode && napplusApiKey) napplusConnected = true;
+  }
+}
+
+// == Query Data from HOSxP ==
+async function queryLabData(dateFrom, dateTo) {
+  if (!sessionConnected || !connectionConfig) return [];
+
+  const beFrom = toBEDate(dateFrom);
+  const beTo = toBEDate(dateTo);
+  const sql = `SELECT * FROM bms_napplus WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
+  const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${encodeURIComponent(APP_NAME)}`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+    const res = await fetch(fullUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${connectionConfig.apiAuthKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const response = await res.json();
+
+    if (response.MessageCode !== 200) {
+      showToast('err', `Query Error: ${response.Message || 'Unknown'}`);
+      return [];
+    }
+    return response.data || response.result?.data || [];
+  } catch (e) {
+    showToast('err', `Connection Error: ${e.message}`);
+    return [];
+  }
+}
+
+// == Query NAPPLUS sent data ==
+async function queryNapplusSent(dateFrom, dateTo) {
+  if (!napplusConnected || !napplusHcode || !napplusApiKey) return [];
+
+  const beFrom = toBEDate(dateFrom);
+  const beTo = toBEDate(dateTo);
+  const allResults = [];
+
+  for (const labType of ['101','102','201','202','203','204']) {
+    const payload = {
+      HEADER: {
+        HCODE_LAB: napplusHcode,
+        LAB_TYPE: labType,
+        LAB_REQUEST_ID: '',
+        RESULT_DATE_FROM: beFrom,
+        RESULT_DATE_TO: beTo,
+        LAB_STATUS: '1'
+      }
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(NAPPLUS_BASE_URL + '/get_lab_result', {
+        method: 'POST',
+        headers: {
+          'UserName': `LAB${napplusHcode}`,
+          'Password': napplusApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_RESULT)) {
+        allResults.push(...data.LAB_RESULT);
+      }
+    } catch (e) {
+      // continue with other lab types
+    }
+  }
+  return allResults;
+}
+
+// == Load Dashboard ==
+async function loadDashboard() {
+  if (!sessionConnected) return;
+
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  showLoading('Loading Lab Data...');
+
+  const days = getRangeDays();
+  const dateFrom = dateOffset(days);
+  const dateTo = todayStr();
+  const startTime = Date.now();
+
+  // Query HOSxP data
+  allData = await queryLabData(dateFrom, dateTo);
+
+  // Query NAPPLUS sent data in parallel if connected
+  let sentData = [];
+  if (napplusConnected) {
+    document.getElementById('loadingText').textContent = 'Loading NAPPLUS Data...';
+    sentData = await queryNapplusSent(dateFrom, dateTo);
+  }
+
+  const elapsed = Date.now() - startTime;
+
+  // Render everything
+  renderSummaryCards(allData);
+  renderDonutChart(allData);
+  renderDailyChart(allData, days);
+  renderStatusChart(allData, sentData);
+  renderTrendChart(allData, days);
+  renderRecentTable(allData, elapsed);
+
+  btn.disabled = false;
+  btn.textContent = 'Refresh';
+  hideLoading();
+
+  showToast('ok', `Dashboard loaded: ${allData.length} records (${elapsed}ms)`);
+}
+
+// == Render Summary Cards ==
+function renderSummaryCards(data) {
+  const counts = { total: data.length, '101': 0, '102': 0, '201': 0, '202': 0, '203': 0, '204': 0 };
+  data.forEach(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    if (counts[lt] !== undefined) counts[lt]++;
+  });
+  document.getElementById('vTotal').textContent = counts.total.toLocaleString();
+  ['101','102','201','202','203','204'].forEach(t => {
+    document.getElementById(`v${t}`).textContent = counts[t].toLocaleString();
+  });
+}
+
+// == Charts ==
+function getChartDefaults() {
+  return {
+    color: '#5a6b7f',
+    borderColor: '#d0d9e3',
+    font: { family: "'Sarabun', sans-serif" }
+  };
+}
+
+function renderDonutChart(data) {
+  const counts = {};
+  ['101','102','201','202','203','204'].forEach(t => counts[t] = 0);
+  data.forEach(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    if (counts[lt] !== undefined) counts[lt]++;
+  });
+
+  const labels = Object.keys(counts).map(t => `${t} ${LAB_TYPES[t]?.name || ''}`);
+  const values = Object.values(counts);
+  const colors = Object.keys(counts).map(t => LAB_TYPES[t]?.color || '#666');
+
+  if (chartDonut) chartDonut.destroy();
+  chartDonut = new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#5a6b7f', font: { size: 11, family: "'Sarabun', sans-serif" }, padding: 10 }
+        }
+      }
+    }
+  });
+}
+
+function renderDailyChart(data, days) {
+  // Group data by request_date
+  const dateCounts = {};
+  data.forEach(row => {
+    const rd = String(row.request_date || row.REQUEST_DATE || '');
+    if (rd) dateCounts[rd] = (dateCounts[rd] || 0) + 1;
+  });
+
+  // Generate date labels for the range
+  const labels = [];
+  const values = [];
+  for (let i = days; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const beDate = toBEDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    const displayLabel = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    labels.push(displayLabel);
+    values.push(dateCounts[beDate] || 0);
+  }
+
+  if (chartDaily) chartDaily.destroy();
+  chartDaily = new Chart(document.getElementById('chartDaily'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Lab Orders',
+        data: values,
+        backgroundColor: 'rgba(8,145,178,0.6)',
+        borderColor: '#0891b2',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a6b7f', font: { size: 10 }, maxRotation: 45 },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#5a6b7f', font: { size: 10 }, precision: 0 },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        }
+      }
+    }
+  });
+}
+
+function renderStatusChart(localData, sentData) {
+  // Count local (HOSxP) per type
+  const localCounts = {};
+  ['101','102','201','202','203','204'].forEach(t => localCounts[t] = 0);
+  localData.forEach(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    if (localCounts[lt] !== undefined) localCounts[lt]++;
+  });
+
+  // Count sent (NAPPLUS) per type
+  const sentCounts = {};
+  ['101','102','201','202','203','204'].forEach(t => sentCounts[t] = 0);
+  sentData.forEach(row => {
+    const lt = String(row.LAB_TYPE || row.lab_type || '');
+    if (sentCounts[lt] !== undefined) sentCounts[lt]++;
+  });
+
+  const labels = Object.keys(LAB_TYPES).map(t => `${t} ${LAB_TYPES[t].name}`);
+  const pendingVals = Object.keys(LAB_TYPES).map(t => Math.max(0, localCounts[t] - sentCounts[t]));
+  const sentVals = Object.keys(LAB_TYPES).map(t => sentCounts[t]);
+
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(document.getElementById('chartStatus'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Sent',
+          data: sentVals,
+          backgroundColor: 'rgba(16,185,129,0.7)',
+          borderColor: '#10b981',
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+        {
+          label: 'Pending',
+          data: pendingVals,
+          backgroundColor: 'rgba(245,158,11,0.7)',
+          borderColor: '#f59e0b',
+          borderWidth: 1,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: {
+          labels: { color: '#5a6b7f', font: { size: 11, family: "'Sarabun', sans-serif" } }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          stacked: true,
+          ticks: { color: '#5a6b7f', font: { size: 10 }, precision: 0 },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: '#5a6b7f', font: { size: 10 } },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        }
+      }
+    }
+  });
+}
+
+function renderTrendChart(data, days) {
+  // Group by date per lab type
+  const series = {};
+  ['101','102','201','202','203','204'].forEach(t => series[t] = {});
+
+  data.forEach(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    const rd = String(row.request_date || row.REQUEST_DATE || '');
+    if (series[lt] && rd) {
+      series[lt][rd] = (series[lt][rd] || 0) + 1;
+    }
+  });
+
+  const labels = [];
+  const dateKeys = [];
+  for (let i = days; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const beDate = toBEDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    labels.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`);
+    dateKeys.push(beDate);
+  }
+
+  const datasets = Object.keys(LAB_TYPES).map(t => ({
+    label: `${t} ${LAB_TYPES[t].name}`,
+    data: dateKeys.map(dk => series[t][dk] || 0),
+    borderColor: LAB_TYPES[t].color,
+    backgroundColor: LAB_TYPES[t].color + '33',
+    borderWidth: 2,
+    pointRadius: days > 30 ? 0 : 3,
+    pointHoverRadius: 5,
+    tension: 0.3,
+    fill: false,
+  }));
+
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(document.getElementById('chartTrend'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: '#5a6b7f', font: { size: 10, family: "'Sarabun', sans-serif" }, boxWidth: 12 }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a6b7f', font: { size: 10 }, maxRotation: 45 },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: '#5a6b7f', font: { size: 10 }, precision: 0 },
+          grid: { color: 'rgba(0,0,0,0.06)' }
+        }
+      }
+    }
+  });
+}
+
+// == Recent Table ==
+function renderRecentTable(data, elapsed) {
+  const tbody = document.getElementById('recentBody');
+  const rows = data.slice(0, 50);
+
+  document.getElementById('tableCount').textContent = data.length;
+  document.getElementById('tableElapsed').textContent = elapsed ? `${elapsed}ms` : '';
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:24px;">No data found</td></tr>';
+    return;
+  }
+
+  const labTypeNames = { '101': 'ANTIHIV', '102': 'PCR', '201': 'CD4', '202': 'VL', '203': 'DR', '204': 'BC' };
+
+  tbody.innerHTML = rows.map(row => {
+    const lt = String(row.lab_type || row.LAB_TYPE || '');
+    const typeName = labTypeNames[lt] || lt;
+    const reqDate = formatBEDisplay(String(row.request_date || row.REQUEST_DATE || ''));
+    const patRight = escHtml(row.patient_right || row.PATIENT_RIGHT || '');
+    const labItem = escHtml(row.lab_item || row.LAB_ITEM || '');
+    const testResult = escHtml(row.test_result || row.TEST_RESULT || '');
+    const labReqId = escHtml(row.lab_request_id || row.LAB_REQUEST_ID || '');
+    const status = String(row.lab_status || row.LAB_STATUS || '');
+    const statusHtml = status === '1'
+      ? '<span style="color:var(--success)">Sent</span>'
+      : '<span style="color:var(--warn)">Pending</span>';
+
+    return `<tr>
+      <td><span class="type-badge t${lt}">${lt} ${typeName}</span></td>
+      <td>${reqDate}</td>
+      <td>${patRight || '<span class="null-val">-</span>'}</td>
+      <td title="${labItem}">${labItem || '<span class="null-val">-</span>'}</td>
+      <td title="${testResult}">${testResult || '<span class="null-val">-</span>'}</td>
+      <td>${labReqId || '<span class="null-val">-</span>'}</td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// == Range Selection ==
+function setRange(range, el) {
+  currentRange = range;
+  document.querySelectorAll('.dash-range-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  loadDashboard();
+}
+
+// == Init ==
+async function init() {
+  // Priority 1: URL parameter
+  const urlSessionId = getSessionFromUrl();
+  if (urlSessionId) {
+    removeSessionFromUrl();
+    const ok = await connectSession(urlSessionId);
+    if (ok) { await loadDashboard(); return; }
+  }
+
+  // Priority 2: Cookie
+  const cookieSessionId = getSessionCookie();
+  if (cookieSessionId) {
+    const ok = await connectSession(cookieSessionId);
+    if (ok) { await loadDashboard(); return; }
+  }
+
+  // No session
+  document.getElementById('emptyState').style.display = 'flex';
+}
+
+// == Auto Refresh ==
+const AUTO_REFRESH_MS = 60000;
+let autoRefreshTimer = null;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(() => {
+    if (sessionConnected) loadDashboard();
+  }, AUTO_REFRESH_MS);
+  updateAutoRefreshUI(true);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  updateAutoRefreshUI(false);
+}
+
+function toggleAutoRefresh() {
+  if (autoRefreshTimer) stopAutoRefresh(); else startAutoRefresh();
+}
+
+function updateAutoRefreshUI(on) {
+  const btn = document.getElementById('autoRefreshBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', on);
+  btn.textContent = on ? 'Auto 60s ON' : 'Auto 60s OFF';
+}
+
+init().then(() => { if (sessionConnected) startAutoRefresh(); });
+</script>
+</body>
+</html>

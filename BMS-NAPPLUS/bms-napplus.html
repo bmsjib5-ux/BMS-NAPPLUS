@@ -7,25 +7,25 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2128;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #7d8590;
-    --primary: #1f6feb;
-    --primary-glow: rgba(31,111,235,0.15);
-    --success: #3fb950;
-    --success-bg: rgba(63,185,80,0.1);
-    --error: #f85149;
-    --error-bg: rgba(248,81,73,0.1);
-    --warn: #d29922;
-    --warn-bg: rgba(210,153,34,0.1);
-    --accent: #58a6ff;
-    --teal: #39d353;
-    --purple: #bc8cff;
-    --orange: #ffa657;
-    --pink: #f778ba;
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #e8eef4;
+    --border: #d0d9e3;
+    --text: #1a2332;
+    --text-muted: #5a6b7f;
+    --primary: #0891b2;
+    --primary-glow: rgba(8,145,178,0.1);
+    --success: #059669;
+    --success-bg: rgba(5,150,105,0.08);
+    --error: #dc2626;
+    --error-bg: rgba(220,38,38,0.08);
+    --warn: #d97706;
+    --warn-bg: rgba(217,119,6,0.08);
+    --accent: #0891b2;
+    --teal: #059669;
+    --purple: #7c3aed;
+    --orange: #ea580c;
+    --pink: #0891b2;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,8 +41,8 @@
 
   /* Header */
   .header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    background: #0f2044;
+    border-bottom: 1px solid #1a3060;
     padding: 0 24px;
     display: flex;
     align-items: center;
@@ -55,20 +55,20 @@
   .header-logo { display: flex; align-items: center; gap: 10px; }
   .logo-shield {
     width: 32px; height: 32px;
-    background: linear-gradient(135deg, #e44d6e, #f778ba);
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-weight: 700; color: #fff;
   }
-  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
-  .header h1 span { color: var(--pink); }
+  .header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; color: #fff; }
+  .header h1 span { color: #22d3ee; }
   .header-subtitle {
-    font-size: 11px; color: var(--text-muted);
-    padding: 2px 8px; background: var(--surface2); border-radius: 4px;
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    padding: 2px 8px; background: rgba(255,255,255,0.08); border-radius: 4px;
   }
   .header-spacer { flex: 1; }
   .back-link {
-    font-size: 12px; color: var(--accent); text-decoration: none;
+    font-size: 12px; color: #22d3ee; text-decoration: none;
     display: flex; align-items: center; gap: 4px;
   }
   .back-link:hover { text-decoration: underline; }
@@ -79,10 +79,10 @@
     font-size: 11px; font-weight: 700;
   }
   .conn-badge.disconnected {
-    background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15);
   }
   .conn-badge.connected {
-    background: var(--success-bg); color: var(--success); border: 1px solid var(--success);
+    background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3);
   }
   .conn-dot {
     width: 6px; height: 6px; border-radius: 50%; background: currentColor;
@@ -137,7 +137,7 @@
     box-shadow: 0 0 0 2px var(--primary-glow);
   }
   .field-input[type="date"] {
-    color-scheme: dark;
+    color-scheme: light;
   }
   .status-row {
     display: flex; align-items: center; gap: 6px;
@@ -176,7 +176,7 @@
     width: 100%;
     margin-top: 10px;
     padding: 8px 12px;
-    background: linear-gradient(135deg, #e44d6e, #f778ba);
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
     border: none;
     border-radius: 6px;
     color: #fff;
@@ -379,7 +379,7 @@
     border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     font-size: 20px; font-weight: 700;
-    color: var(--pink);
+    color: var(--accent);
     margin-bottom: 12px;
   }
   .empty-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
@@ -421,7 +421,7 @@
   .summary-card.cd4 .val { color: var(--teal); }
   .summary-card.vl .val { color: var(--purple); }
   .summary-card.dr .val { color: var(--orange); }
-  .summary-card.bc .val { color: var(--pink); }
+  .summary-card.bc .val { color: var(--accent); }
 
   /* Spinner */
   .spinner {
@@ -476,8 +476,8 @@
   /* Header send button */
   .header-send-btn {
     padding: 6px 18px;
-    background: linear-gradient(135deg, #e44d6e, #f778ba);
-    border: 2px solid var(--pink);
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
+    border: 2px solid var(--primary);
     border-radius: 6px;
     color: #fff;
     font-size: 12px;
@@ -492,10 +492,10 @@
   /* Settings toggle */
   .settings-toggle {
     padding: 4px 12px;
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 6px;
-    background: var(--surface2);
-    color: var(--text-muted);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.6);
     font-size: 13px;
     cursor: pointer;
     display: flex;
@@ -503,8 +503,8 @@
     gap: 6px;
     transition: all 0.15s;
   }
-  .settings-toggle:hover { border-color: var(--accent); color: var(--text); }
-  .settings-toggle.active { border-color: var(--primary); color: var(--accent); background: var(--primary-glow); }
+  .settings-toggle:hover { border-color: #22d3ee; color: #fff; }
+  .settings-toggle.active { border-color: #0891b2; color: #22d3ee; background: rgba(8,145,178,0.2); }
   .sidebar-section.collapsible { display: none; }
   .sidebar-section.collapsible.open { display: block; }
 
@@ -541,7 +541,7 @@
   .modal h2 {
     font-size: 16px; font-weight: 700;
     margin-bottom: 16px;
-    color: var(--pink);
+    color: var(--accent);
   }
   .modal h3 {
     font-size: 13px; font-weight: 700;
@@ -594,8 +594,89 @@
     margin: 8px 0;
   }
 
+  /* Left Navigation Sidebar */
+  .nav-sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #111111;
+    border-right: 1px solid #222;
+    height: calc(100vh - 56px);
+    position: fixed;
+    top: 56px;
+    left: 0;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+  .nav-sidebar .nav-brand {
+    padding: 4px 20px 18px;
+    border-bottom: 1px solid #222;
+    margin-bottom: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .nav-sidebar .nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 10px;
+  }
+  .nav-sidebar .nav-group-title {
+    padding: 0 10px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .nav-sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #999;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-sidebar .nav-link:hover { background: #1a1a1a; color: #e0e0e0; }
+  .nav-sidebar .nav-link.active { background: rgba(8,145,178,0.15); color: #22d3ee; }
+  .nav-sidebar .nav-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+    background: #1a1a1a; color: #888;
+  }
+  .nav-sidebar .nav-link.active .nav-icon { background: var(--primary); color: #fff; }
+  .nav-sidebar .nav-label { line-height: 1.2; }
+  .nav-sidebar .nav-desc { font-size: 10px; font-weight: 400; color: #666; margin-top: 1px; }
+  .nav-sidebar .nav-divider { height: 1px; background: #222; margin: 12px 20px; }
+  .nav-sidebar .nav-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    border-top: 1px solid #222;
+    font-size: 11px; color: #888;
+  }
+  .nav-sidebar .nav-footer .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #444; margin-right: 6px; vertical-align: middle; }
+  .nav-sidebar .nav-footer .dot.ok { background: #10b981; }
+
+  .page-wrapper {
+    margin-left: 220px;
+  }
+
   /* Responsive */
   @media (max-width: 900px) {
+    .nav-sidebar { display: none; }
+    .page-wrapper { margin-left: 0; }
     .main { flex-direction: column; }
     .sidebar { width: 100%; min-width: auto; max-height: 300px; border-right: none; border-bottom: 1px solid var(--border); }
   }
@@ -606,7 +687,7 @@
 <!-- Header -->
 <div class="header">
   <div class="header-logo">
-    <div class="logo-shield">N+</div>
+    <div class="logo-shield">&#9769;</div>
     <h1>NAPPLUS LAB <span>Query Viewer</span></h1>
   </div>
   <span class="header-subtitle">ดูข้อมูล LAB จากฐานข้อมูล HOSxP</span>
@@ -619,6 +700,60 @@
     <span id="connText">Not Connected</span>
   </div>
 </div>
+
+<!-- Left Navigation Sidebar -->
+<nav class="nav-sidebar">
+  <div class="nav-brand">Navigation</div>
+  <div class="nav-group-title">Main</div>
+  <div class="nav-group">
+    <a class="nav-link" href="index.html">
+      <div class="nav-icon">&#9707;</div>
+      <div>
+        <div class="nav-label">Dashboard</div>
+        <div class="nav-desc">Overview & Charts</div>
+      </div>
+    </a>
+    <a class="nav-link active" href="bms-napplus.html">
+      <div class="nav-icon">&#9776;</div>
+      <div>
+        <div class="nav-label">Query Viewer</div>
+        <div class="nav-desc">Query, Send Report</div>
+      </div>
+    </a>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-group-title">NAPPLUS API</div>
+  <div class="nav-group">
+    <a class="nav-link" href="#" onclick="showTab('check', document.querySelector('.tab-btn:nth-child(2)')); return false;">
+      <div class="nav-icon">&#10003;</div>
+      <div>
+        <div class="nav-label">Lab Request</div>
+        <div class="nav-desc">get_lab_request</div>
+      </div>
+    </a>
+    <a class="nav-link" href="#" onclick="showTab('result', document.querySelector('.tab-btn:nth-child(3)')); return false;">
+      <div class="nav-icon">&#9874;</div>
+      <div>
+        <div class="nav-label">Lab Result</div>
+        <div class="nav-desc">get_lab_result</div>
+      </div>
+    </a>
+    <a class="nav-link" href="#" onclick="showTab('report', document.querySelector('#reportTabBtn')); return false;">
+      <div class="nav-icon">&#10148;</div>
+      <div>
+        <div class="nav-label">Send Report</div>
+        <div class="nav-desc">set_lab_result</div>
+      </div>
+    </a>
+  </div>
+  <div class="nav-footer" id="navFooter">
+    <span class="dot" id="navDot"></span>
+    <span id="navConnName">Not Connected</span>
+  </div>
+</nav>
+
+<!-- Page Wrapper -->
+<div class="page-wrapper">
 
 <!-- Main -->
 <div class="main">
@@ -677,7 +812,7 @@
     <!-- Run -->
     <div class="sidebar-section">
       <button class="btn btn-primary" id="runBtn" onclick="runQuery()" disabled>
-        <span id="runBtnText">Query Data</span>
+        <span id="runBtnText">ค้นหา</span>
       </button>
     </div>
 
@@ -726,6 +861,7 @@
         <span class="elapsed-badge" id="elapsedTime"></span>
       </div>
       <div class="toolbar-spacer"></div>
+      <button class="toolbar-btn" id="autoRefreshBtn" onclick="toggleAutoRefresh()" style="font-weight:700">Auto 60s OFF</button>
       <button class="toolbar-btn" onclick="exportCsv()">Export CSV</button>
       <button class="toolbar-btn" onclick="copySql()">Copy SQL</button>
     </div>
@@ -743,13 +879,13 @@
     <!-- Tab: Table -->
     <div class="tab-content active" id="tab-table">
       <div class="empty-state" id="emptyState">
-        <div class="empty-icon">N+</div>
+        <div class="empty-icon">&#9769;</div>
         <div class="empty-title">NAPPLUS LAB Query Viewer</div>
         <div class="empty-sub">
           ดูข้อมูล LAB จากคิวรี่ต้นทางก่อนแปลผลเป็น JSON<br><br>
           1. กรอก BMS Session ID แล้วกด Connect Session<br>
           2. เลือกช่วงวันที่และ Lab Type<br>
-          3. กดปุ่ม Query Data
+          3. กดปุ่ม ค้นหา
         </div>
       </div>
       <div class="table-wrap" id="tableWrap" style="display:none"></div>
@@ -814,6 +950,8 @@
   </div>
 </div>
 
+</div><!-- /page-wrapper -->
+
 <!-- Info Modal -->
 <div class="modal-overlay" id="infoModal" onclick="if(event.target===this)toggleInfo()">
   <div class="modal">
@@ -872,7 +1010,7 @@ WHERE i.gen_order_prefix::text = ANY (
     <h3><span class="step-num">3</span> Query ข้อมูล</h3>
     <ul>
       <li>เลือกช่วงวันที่ และ Lab Type ที่ต้องการ</li>
-      <li>กดปุ่ม <code>Query Data</code> เพื่อดึงข้อมูลจาก View bms_napplus</li>
+      <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก View bms_napplus</li>
       <li>ตรวจสอบข้อมูลในตาราง Table</li>
     </ul>
 
@@ -1066,13 +1204,21 @@ async function handleConnect() {
     updateSendBtnState();
   }
 
+  // Update nav sidebar
+  document.getElementById('navDot').classList.add('ok');
+  document.getElementById('navConnName').textContent = userInfo.name || 'Connected';
+
   showToast('ok', `Connected: ${userInfo.name || 'OK'} @ ${userInfo.location || ''}`);
 
   // Auto-fetch NAPPLUS API Key from sys_var and auto-connect
   await fetchAndConnectNapplus();
+
+  // Start auto refresh
+  startAutoRefresh();
 }
 
 function disconnectSession() {
+  stopAutoRefresh();
   sessionConnected = false;
   sessionData = null;
   connectionConfig = null;
@@ -1091,6 +1237,9 @@ function disconnectSession() {
   document.getElementById('sessionDot').className = 'status-dot';
   document.getElementById('sessionStatusTxt').textContent = 'No Session ID';
   document.getElementById('sessionStatusTxt').style.color = 'var(--text-muted)';
+
+  document.getElementById('navDot').classList.remove('ok');
+  document.getElementById('navConnName').textContent = 'Not Connected';
 
   showToast('info', 'Session disconnected');
 }
@@ -1126,6 +1275,7 @@ function setDatePreset(preset) {
   document.getElementById('dateFrom').value = formatDate(from);
   document.getElementById('dateTo').value = formatDate(to);
   renderSqlPreview();
+  if (sessionConnected) runQuery();
 }
 
 function formatDate(d) {
@@ -1251,7 +1401,7 @@ async function runQuery() {
 
   const elapsed = Date.now() - startTime;
   btn.disabled = false;
-  btnText.textContent = 'Query Data';
+  btnText.textContent = 'ค้นหา';
 
   // Process result
   const isOk = response.MessageCode === 200;
@@ -2151,7 +2301,41 @@ function init() {
   }
 }
 
+// == Auto Refresh ==
+const AUTO_REFRESH_MS = 60000;
+let autoRefreshTimer = null;
+
+function autoRefreshQuery() {
+  if (!sessionConnected) return;
+  if (lastData.length > 0 || document.getElementById('dateFrom').value) {
+    runQuery();
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(autoRefreshQuery, AUTO_REFRESH_MS);
+  updateAutoRefreshUI(true);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  updateAutoRefreshUI(false);
+}
+
+function toggleAutoRefresh() {
+  if (autoRefreshTimer) stopAutoRefresh(); else startAutoRefresh();
+}
+
+function updateAutoRefreshUI(on) {
+  const btn = document.getElementById('autoRefreshBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', on);
+  btn.textContent = on ? 'Auto 60s ON' : 'Auto 60s OFF';
+}
+
 init();
+if (sessionConnected) startAutoRefresh();
 </script>
 </body>
 </html>
