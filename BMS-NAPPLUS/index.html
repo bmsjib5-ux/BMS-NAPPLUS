@@ -1392,8 +1392,18 @@ function renderRecentTable(data, elapsed) {
     const reqDate = formatBEDisplay(String(row.request_date || row.REQUEST_DATE || ''));
     const patRight = escHtml(row.patient_right || row.PATIENT_RIGHT || '');
     const labItem = escHtml(row.lab_item || row.LAB_ITEM || '');
-    const testResult = escHtml(row.test_result || row.TEST_RESULT || '');
-    const labReqId = escHtml(row.lab_request_id || row.LAB_REQUEST_ID || '');
+    const testResultRaw = row.test_result || row.TEST_RESULT || '';
+    const testResult = testResultRaw ? '******' : '';
+    const labReqIdRaw = row.lab_request_id || row.LAB_REQUEST_ID || '';
+    const hcode = napplusHcode || '';
+    const reqDateStr = String(row.request_date || row.REQUEST_DATE || '');
+    let labReqId = escHtml(labReqIdRaw);
+    if (labReqIdRaw && hcode) {
+      let yyMM = '';
+      if (reqDateStr.length === 8) { yyMM = reqDateStr.substring(2, 6); }
+      else { const n = new Date(); yyMM = String(n.getFullYear()+543).substring(2) + String(n.getMonth()+1).padStart(2,'0'); }
+      labReqId = `BL-${hcode}-${yyMM}-${labReqIdRaw}`;
+    }
     const status = String(row.lab_status || row.LAB_STATUS || '');
     const statusHtml = status === '1'
       ? '<span style="color:var(--success)">Sent</span>'
