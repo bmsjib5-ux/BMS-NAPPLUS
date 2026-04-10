@@ -961,43 +961,71 @@
     <h3><span class="step-num">1</span> สร้าง View Table: bms_napplus ในฐานข้อมูล HOSxP</h3>
     <p>สร้าง View ในฐานข้อมูล PostgreSQL ของ HOSxP เพื่อดึงข้อมูล LAB ที่ต้องส่ง NAPPLUS</p>
     <pre>CREATE OR REPLACE VIEW bms_napplus AS
-SELECT i.gen_order_prefix::integer AS lab_type,
-  (( SELECT opdconfig.hospitalcode
-         FROM opdconfig
-       LIMIT 1))::text AS hcode_request,
-  (( SELECT opdconfig.hospitalcode
-         FROM opdconfig
-       LIMIT 1))::text AS hcode_lab,
-      CASE
-          WHEN i.gen_order_prefix::text = ANY (ARRAY['101'::text, '102'::text])
-          THEN p.cid
-          ELSE ''::character varying
-      END::text AS patient_id,
-  h.lab_order_number::text AS lab_request_id,
-  to_char(
-    (date_part('year'::text, h.order_date) + 543::double precision)::integer * 10000
-    + date_part('month'::text, h.order_date)::integer * 100
-    + date_part('day'::text, h.order_date)::integer,
-    'FM00000000'::text
-  ) AS request_date,
-  ptt.name::text AS patient_right,
-  'Y'::text AS request_approved_status,
-  '1'::text AS lab_status,
-  i.lab_items_name::text AS lab_item,
-  ''::text AS request_approved_remark,
-  o.lab_order_result::text AS test_result,
-  ''::text AS remark_nodetected
-FROM lab_head h
-  LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
-  JOIN lab_items i ON i.lab_items_code = o.lab_items_code
-  LEFT JOIN patient p ON p.hn::text = h.hn::text
-  LEFT JOIN ovst ov ON ov.vn::text = h.vn::text
-  LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
-WHERE i.gen_order_prefix::text = ANY (
-  ARRAY['101'::text, '102'::text, '201'::text,
-        '202'::text, '203'::text, '204'::text]
-);</pre>
-    <div class="note">หมายเหตุ: gen_order_prefix ต้องตั้งค่าใน lab_items ให้ตรงกับ LAB_TYPE ของ NAPPLUS (101=ANTIHIV, 102=PCR, 201=CD4, 202=Viral Load, 203=Drug Resistance, 204=Blood Chemistry)</div>
+ SELECT h.hn,i.gen_order_prefix::integer AS lab_type,
+    (( SELECT opdconfig.hospitalcode
+           FROM opdconfig
+         LIMIT 1))::text AS hcode_request,
+    (( SELECT opdconfig.hospitalcode
+           FROM opdconfig
+         LIMIT 1))::text AS hcode_lab,
+        CASE
+            WHEN i.gen_order_prefix::text = ANY (ARRAY['101'::text, '102'::text]) THEN p.cid
+            ELSE ''::character varying
+        END::text AS patient_id,
+    h.lab_order_number::text AS lab_request_id,
+    to_char((date_part('year'::text, h.order_date) + 543::double precision)::integer * 10000
+      + date_part('month'::text, h.order_date)::integer * 100
+      + date_part('day'::text, h.order_date)::integer, 'FM00000000'::text) AS request_date,
+    ptt.name::text AS patient_right,
+    'Y'::text AS request_approved_status,
+    '1'::text AS lab_status,
+    i.lab_items_name::text AS lab_item,
+    ''::text AS request_approved_remark,
+    o.lab_order_result::text AS test_result,
+    ''::text AS remark_nodetected
+   FROM lab_head h
+     LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
+     JOIN lab_items i ON i.lab_items_code = o.lab_items_code
+     LEFT JOIN patient p ON p.hn::text = h.hn::text
+     LEFT JOIN ovst ov ON ov.vn::text = h.vn::text
+     LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
+  WHERE i.gen_order_prefix::text = ANY (ARRAY['101','102','201','202','203'])
+UNION ALL
+ SELECT h.hn,204 AS lab_type,
+    (( SELECT opdconfig.hospitalcode
+           FROM opdconfig
+         LIMIT 1))::text AS hcode_request,
+    (( SELECT opdconfig.hospitalcode
+           FROM opdconfig
+         LIMIT 1))::text AS hcode_lab,
+        CASE
+            WHEN i.gen_order_prefix::text = ANY (ARRAY['101'::text, '102'::text]) THEN p.cid
+            ELSE cm.nap_number::character varying
+        END::text AS patient_id,
+    h.lab_order_number::text AS lab_request_id,
+    to_char((date_part('year'::text, h.order_date) + 543::double precision)::integer * 10000
+      + date_part('month'::text, h.order_date)::integer * 100
+      + date_part('day'::text, h.order_date)::integer, 'FM00000000'::text) AS request_date,
+    ptt.name::text AS patient_right,
+    'Y'::text AS request_approved_status,
+    '1'::text AS lab_status,
+        CASE
+            WHEN i.gen_order_prefix::text = 'SGPT'::text THEN 'SGPT(ALT)'::character varying
+            ELSE i.gen_order_prefix
+        END::text AS lab_item,
+    ''::text AS request_approved_remark,
+    o.lab_order_result::text AS test_result,
+    ''::text AS remark_nodetected
+   FROM lab_head h
+     LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
+     JOIN lab_items i ON i.lab_items_code = o.lab_items_code
+     LEFT JOIN patient p ON p.hn::text = h.hn::text
+     LEFT JOIN ovst ov ON ov.vn::text = h.vn::text
+     LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
+     LEFT JOIN clinicmember cm ON cm.hn::text = h.hn::text
+  WHERE cm.nap_number IS NOT NULL
+    AND (i.gen_order_prefix::text = ANY (ARRAY['WBC','Hb','Cr','Chol','FBS','TG','SGPT']::text[]));</pre>
+    <div class="note">หมายเหตุ: LAB_TYPE 101-203 ใช้ gen_order_prefix ตรง, LAB_TYPE 204 (Blood Chemistry) ดึงจาก lab_items ที่เป็น WBC/Hb/Cr/Chol/FBS/TG/SGPT เฉพาะผู้ป่วยที่มี nap_number ใน clinicmember</div>
 
     <h3><span class="step-num">2</span> ตั้งค่า NAPPLUS API</h3>
     <p>กดปุ่ม <code>ตั้งค่า</code> ที่ Header แล้วกรอกข้อมูล:</p>
@@ -1061,6 +1089,18 @@ let activeLabTypes = [];   // empty = ALL
 function escHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function maskPatientId(val) {
+  const s = String(val || '');
+  if (s.length <= 4) return s;
+  return s.substring(0, s.length - 4) + '****';
+}
+
+function maskValue(val) {
+  const s = String(val || '');
+  if (!s) return '';
+  return '******';
 }
 
 function todayStr() {
@@ -1469,12 +1509,18 @@ function renderTable(data) {
   table.appendChild(thead);
 
   // Body
+  const pidFields = ['patient_id','PATIENT_ID','patient_cid','cid','CID'];
+  const maskFields = ['test_result','TEST_RESULT'];
+  const reqIdFields = ['lab_request_id','LAB_REQUEST_ID'];
+  const hcode = document.getElementById('hcode')?.value?.trim() || '';
   const tbody = document.createElement('tbody');
   data.forEach(row => {
     const tr = document.createElement('tr');
     fields.forEach(f => {
       const td = document.createElement('td');
-      const val = row[f];
+      let val = row[f];
+      const isPid = pidFields.includes(f);
+      const isReqId = reqIdFields.includes(f);
       if (val === null || val === undefined || val === '') {
         td.innerHTML = '<span class="null-val">-</span>';
       } else if (typeof val === 'object') {
@@ -1483,6 +1529,13 @@ function renderTable(data) {
         td.title = JSON.stringify(val, null, 2);
       } else if (typeof val === 'number') {
         td.innerHTML = `<span class="num-val">${val}</span>`;
+      } else if (isPid) {
+        td.textContent = maskPatientId(val);
+      } else if (maskFields.includes(f)) {
+        td.textContent = maskValue(val);
+      } else if (isReqId && hcode) {
+        td.textContent = buildNapplusRequestId(hcode, row);
+        td.title = `Original: ${val}`;
       } else {
         td.textContent = val;
       }
@@ -2056,6 +2109,7 @@ function renderCheckTable(data) {
     fields.forEach(f => {
       const td = document.createElement('td');
       const val = row[f];
+      const isPid = ['patient_id','PATIENT_ID','patient_cid','cid','CID'].includes(f);
       if (val === null || val === undefined || val === '') {
         td.innerHTML = '<span class="null-val">-</span>';
       } else if (typeof val === 'object') {
@@ -2065,7 +2119,7 @@ function renderCheckTable(data) {
       } else if (typeof val === 'number') {
         td.innerHTML = `<span class="num-val">${val}</span>`;
       } else {
-        td.textContent = val;
+        td.textContent = isPid ? maskPatientId(val) : val;
       }
       tr.appendChild(td);
     });
@@ -2193,6 +2247,7 @@ function renderResultTable(data) {
     fields.forEach(f => {
       const td = document.createElement('td');
       const val = row[f];
+      const isPid = ['patient_id','PATIENT_ID','patient_cid','cid','CID'].includes(f);
       if (val === null || val === undefined || val === '') {
         td.innerHTML = '<span class="null-val">-</span>';
       } else if (typeof val === 'object') {
@@ -2202,7 +2257,7 @@ function renderResultTable(data) {
       } else if (typeof val === 'number') {
         td.innerHTML = `<span class="num-val">${val}</span>`;
       } else {
-        td.textContent = val;
+        td.textContent = isPid ? maskPatientId(val) : val;
       }
       tr.appendChild(td);
     });
