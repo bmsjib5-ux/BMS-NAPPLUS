@@ -534,6 +534,67 @@
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
 
+  /* Preview Mode */
+  .preview-btn {
+    margin-top: 16px;
+    padding: 12px 32px;
+    background: linear-gradient(135deg, #0891b2, #22d3ee);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Sarabun', sans-serif;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 16px rgba(8,145,178,0.3);
+  }
+  .preview-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(8,145,178,0.4);
+  }
+  .preview-btn:active { transform: translateY(0); }
+  .preview-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .preview-banner {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, #0891b2, #0e7490);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .preview-banner .preview-tag {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .preview-banner .exit-preview-btn {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 3px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Sarabun', sans-serif;
+    transition: background 0.15s;
+  }
+  .preview-banner .exit-preview-btn:hover {
+    background: rgba(255,255,255,0.35);
+  }
+
   /* Responsive */
   @media (max-width: 900px) {
     .chart-grid { grid-template-columns: 1fr; }
@@ -617,6 +678,13 @@
     </div>
   </div>
 </nav>
+
+<!-- Preview Banner -->
+<div class="preview-banner" id="previewBanner">
+  <span class="preview-tag">PREVIEW</span>
+  <span>กำลังแสดงข้อมูลจำลอง &mdash; ไม่ได้เชื่อมต่อระบบจริง</span>
+  <button class="exit-preview-btn" onclick="exitPreviewMode()">&#10005; ออกจาก Preview</button>
+</div>
 
 <!-- Page Wrapper -->
 <div class="page-wrapper">
@@ -745,6 +813,8 @@
     1. เปิดจากระบบ HOSxP ด้วย URL ที่มี <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);">?bms-session-id=...</code><br>
     2. หรือเปิดจาก <a href="bms-napplus.html" style="color:var(--accent)">Query Viewer</a> แล้ว Connect Session ก่อน
   </div>
+  <button class="preview-btn" onclick="startPreviewMode()">&#9654; Preview Program</button>
+  <div class="preview-hint">ดูตัวอย่างโปรแกรมด้วยข้อมูลจำลอง</div>
 </div>
 
 </div><!-- /page-wrapper -->
@@ -1426,7 +1496,133 @@ function setRange(range, el) {
   currentRange = range;
   document.querySelectorAll('.dash-range-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  loadDashboard();
+  if (previewMode) { loadPreviewDashboard(); } else { loadDashboard(); }
+}
+
+// == Preview Mode ==
+let previewMode = false;
+
+function generateSampleData(days) {
+  const labTypes = ['101','102','201','202','203','204'];
+  const patientRights = ['UC','SSO','CSMBS','SELF','OFC'];
+  const labItems = {
+    '101': ['Anti-HIV 1/2','Anti-HIV Ag/Ab Combo','HIV Rapid Test'],
+    '102': ['HIV-1 RNA PCR','HIV-1 DNA PCR','EID PCR'],
+    '201': ['CD4 Count','CD4%','CD4/CD8 Ratio'],
+    '202': ['HIV-1 Viral Load','HBV Viral Load','HCV Viral Load'],
+    '203': ['HIV DR Genotyping','HIV DR Mutation'],
+    '204': ['CBC','Chem-7','Lipid Profile','LFT','RFT','FBS','HbA1c'],
+  };
+
+  const data = [];
+  const weights = [18, 10, 25, 30, 5, 12];
+
+  for (let i = days; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const beDate = toBEDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+
+    // Vary record count by day-of-week (fewer on weekends)
+    const dow = d.getDay();
+    const baseFactor = (dow === 0 || dow === 6) ? 0.3 : 1;
+    const dailyCount = Math.floor((Math.random() * 6 + 3) * baseFactor);
+
+    for (let j = 0; j < dailyCount; j++) {
+      // Weighted random lab type
+      const totalWeight = weights.reduce((a, b) => a + b, 0);
+      let r = Math.random() * totalWeight;
+      let ltIdx = 0;
+      for (let w = 0; w < weights.length; w++) {
+        r -= weights[w];
+        if (r <= 0) { ltIdx = w; break; }
+      }
+      const lt = labTypes[ltIdx];
+      const items = labItems[lt];
+      const item = items[Math.floor(Math.random() * items.length)];
+      const right = patientRights[Math.floor(Math.random() * patientRights.length)];
+      const sent = Math.random() < 0.7;
+
+      data.push({
+        lab_type: lt,
+        request_date: beDate,
+        patient_right: right,
+        lab_item: item,
+        test_result: sent ? 'SAMPLE_RESULT' : '',
+        lab_request_id: String(1000 + Math.floor(Math.random() * 9000)),
+        lab_status: sent ? '1' : '0',
+      });
+    }
+  }
+  return data;
+}
+
+function generateSampleSentData(localData) {
+  return localData.filter(row => row.lab_status === '1');
+}
+
+function loadPreviewDashboard() {
+  const days = getRangeDays();
+  const startTime = Date.now();
+
+  allData = generateSampleData(days);
+  const sentData = generateSampleSentData(allData);
+  const elapsed = Date.now() - startTime;
+
+  renderSummaryCards(allData);
+  renderDonutChart(allData);
+  renderDailyChart(allData, days);
+  renderStatusChart(allData, sentData);
+  renderTrendChart(allData, days);
+  renderRecentTable(allData, elapsed);
+
+  showToast('info', `Preview: ${allData.length} sample records`);
+}
+
+function startPreviewMode() {
+  previewMode = true;
+  napplusHcode = '00000';
+
+  // Update UI to show preview state
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  document.getElementById('previewBanner').style.display = 'flex';
+  document.getElementById('hospitalName').textContent = 'Preview Mode';
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge connected';
+  document.getElementById('connText').textContent = 'Preview';
+
+  document.getElementById('sidebarDot').classList.add('ok');
+  document.getElementById('sidebarName').textContent = 'Preview Mode';
+  document.getElementById('sidebarHospital').textContent = 'Sample Data';
+
+  loadPreviewDashboard();
+}
+
+function exitPreviewMode() {
+  previewMode = false;
+  napplusHcode = '';
+  allData = [];
+
+  // Reset UI
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('previewBanner').style.display = 'none';
+  document.getElementById('hospitalName').textContent = '-';
+
+  const badge = document.getElementById('connBadge');
+  badge.className = 'conn-badge disconnected';
+  document.getElementById('connText').textContent = 'Not Connected';
+
+  document.getElementById('sidebarDot').classList.remove('ok');
+  document.getElementById('sidebarName').textContent = 'Not Connected';
+  document.getElementById('sidebarHospital').textContent = '-';
+
+  // Destroy charts
+  if (chartDonut) { chartDonut.destroy(); chartDonut = null; }
+  if (chartDaily) { chartDaily.destroy(); chartDaily = null; }
+  if (chartStatus) { chartStatus.destroy(); chartStatus = null; }
+  if (chartTrend) { chartTrend.destroy(); chartTrend = null; }
 }
 
 // == Init ==
