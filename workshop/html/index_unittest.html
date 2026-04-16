@@ -164,6 +164,11 @@
     <input type="text" class="settings-input" id="sessionInput" placeholder="Paste BMS Session ID..." spellcheck="false" autocomplete="off">
   </div>
   <div class="conn-panel" id="panelPg" style="display:none">
+    <div id="githubPagesWarning" style="display:none;padding:10px 14px;background:rgba(255,166,87,0.1);border:1px solid rgba(255,166,87,0.3);border-radius:8px;font-size:13px;color:var(--orange);line-height:1.6">
+      &#9888; เปิดผ่าน GitHub Pages (HTTPS) ไม่สามารถเชื่อมต่อ HTTP API ได้<br>
+      กรุณาเปิดผ่าน Local Server แทน:<br>
+      <a id="localServerLink" href="#" style="color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:12px" target="_blank"></a>
+    </div>
     <div style="display:flex;gap:10px">
       <div style="flex:3"><div class="field-label-sm">Host</div>
         <input type="text" class="settings-input" id="pgHost" placeholder="localhost" spellcheck="false"></div>
@@ -387,9 +392,12 @@ function setConnStatus(state,text){
   document.getElementById('connStatusText').textContent=text;
 }
 
+function isGitHubPages(){return location.protocol==='https:'&&location.hostname.endsWith('.github.io')}
+
 function buildPgApiUrl(){
   const custom=document.getElementById('pgApiUrl').value.trim();
   if(custom)return custom.replace(/\/$/,'');
+  if(isGitHubPages())return '';
   return window.location.origin+'/api/sql';
 }
 
@@ -414,6 +422,7 @@ async function connectFromSettings(){
     setConnStatus('','Not Connected');updateConnBtn();return;
   }
   const apiUrl=buildPgApiUrl();
+  if(!apiUrl){setConnStatus('err','กรุณาเปิดผ่าน Local Server หรือกรอก API Endpoint');return}
   const baseUrl=apiUrl.replace(/\/api\/sql\/?$/,'');
   const btn=document.getElementById('connBtn');
   btn.disabled=true;btn.textContent='Connecting...';
@@ -441,6 +450,13 @@ async function connectFromSettings(){
   if(m)document.getElementById('sessionInput').value=decodeURIComponent(m[1]);
   loadPgFromStorage();
   if(localStorage.getItem('ws-pg-api-url')){pgConnected=true;setConnStatus('ok','Connected (saved)');updateConnBtn()}
+  if(isGitHubPages()){
+    var warn=document.getElementById('githubPagesWarning');
+    var link=document.getElementById('localServerLink');
+    var host=localStorage.getItem('ws-pg-host')||'localhost';
+    var localUrl='http://'+host+':7714/'+location.pathname.split('/').pop();
+    link.href=localUrl;link.textContent=localUrl;warn.style.display='block';
+  }
 })();
 
 let currentCat='all';
