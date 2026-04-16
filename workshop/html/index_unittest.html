@@ -390,9 +390,7 @@ function setConnStatus(state,text){
 function buildPgApiUrl(){
   const custom=document.getElementById('pgApiUrl').value.trim();
   if(custom)return custom.replace(/\/$/,'');
-  const host=document.getElementById('pgHost').value.trim()||'localhost';
-  const port=document.getElementById('pgPort').value.trim()||'7714';
-  return 'http://'+host+':'+port+'/api/sql';
+  return window.location.origin+'/api/sql';
 }
 
 function savePgToStorage(){

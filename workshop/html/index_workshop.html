@@ -994,9 +994,8 @@ function updateConnBtn() {
 function buildPgApiUrl() {
   const custom = document.getElementById('pgApiUrl').value.trim();
   if (custom) return custom.replace(/\/$/, '');
-  const host = document.getElementById('pgHost').value.trim() || 'localhost';
-  const port = document.getElementById('pgPort').value.trim() || '7714';
-  return 'http://' + host + ':' + port + '/api/sql';
+  // Auto-detect: use current page origin so it works on any IP/hostname
+  return window.location.origin + '/api/sql';
 }
 
 // Form fields use 'ws-pg-endpoint' for the raw display value (with /api/sql).
