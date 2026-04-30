@@ -1833,7 +1833,7 @@ async function callGetLabRequest(hcode, apiKey, labType, beFrom, beTo, labStatus
 // then expand date range by ±30 days if still empty.
 async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
   const map = new Map();
-  const issues = { fetched: 0, errors: [], attempts: [] };
+  const issues = { fetched: 0, errors: [], attempts: [], sampleRows: [] };
 
   // Expand date range to handle mismatch between HOSxP order date and NAPPLUS request date
   const beFromExpand = adjustBEDate(beFrom, -30);
@@ -1871,6 +1871,17 @@ async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
 
     if (!r.ok) issues.errors.push(`${labType}: ${r.error}`);
     issues.attempts.push(attemptLog);
+
+    // Save sample of NAPPLUS response for diagnostics
+    rows.slice(0, 3).forEach(req => {
+      issues.sampleRows.push({
+        LAB_TYPE: req.LAB_TYPE,
+        PATIENT_ID: req.PATIENT_ID,
+        REQUEST_DATE: req.REQUEST_DATE,
+        LAB_REQUEST_ID: req.LAB_REQUEST_ID,
+        LAB_STATUS: req.LAB_STATUS
+      });
+    });
 
     rows.forEach(req => {
       const pidRaw = String(req.PATIENT_ID ?? '').trim();
@@ -2098,11 +2109,20 @@ async function sendReport() {
   if (payloads.length === 0) {
     headerBtn.disabled = false;
     headerBtn.textContent = 'Send Report to NAPPLUS';
-    const errMsg = `ไม่มีรายการที่จับคู่กับ NAPPLUS ได้ (${matchStats.unmatched} รายการไม่ match)`;
+    const errMsg = `ไม่มีรายการที่จับคู่กับ NAPPLUS ได้ (${matchStats.unmatched} รายการไม่ match) — ดูแท็บ Send Report เพื่อดูรายละเอียด`;
     showToast('err', errMsg);
     statusDiv.style.display = 'block';
     statusDiv.className = 'send-status err';
     statusDiv.innerHTML = errMsg;
+    // Show report tab with match diagnostics even when no matches
+    document.getElementById('reportTabBtn').style.display = '';
+    matchStats.napplusInfo = { attempts: fetchIssues.attempts, sampleRows: fetchIssues.sampleRows, mapSize: napplusMap.size };
+    renderReportTab([], 0, matchStats);
+    // Auto-switch to Send Report tab
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('reportTabBtn').classList.add('active');
+    document.getElementById('tab-report').classList.add('active');
     return;
   }
 
@@ -2182,6 +2202,7 @@ async function sendReport() {
 
   // Show report tab
   document.getElementById('reportTabBtn').style.display = '';
+  matchStats.napplusInfo = { attempts: fetchIssues.attempts, sampleRows: fetchIssues.sampleRows, mapSize: napplusMap.size };
   renderReportTab(allResponses, elapsed, matchStats);
 
   showToast(
@@ -2207,8 +2228,23 @@ function renderReportTab(allResponses, elapsed, matchStats) {
 <span class="json-bool">Matched:</span> <span class="json-number">${matchStats.matched}</span>
 <span class="json-null">Unmatched (skipped):</span> <span class="json-number">${matchStats.unmatched}</span>
 `;
+    if (matchStats.napplusInfo) {
+      const info = matchStats.napplusInfo;
+      html += `<span class="json-key">NAPPLUS map size:</span> <span class="json-number">${info.mapSize || 0}</span>
+<span class="json-key">Fetch attempts:</span>
+${escHtml((info.attempts || []).join('\n'))}
+`;
+      if (info.sampleRows && info.sampleRows.length > 0) {
+        html += `<span class="json-key">Sample NAPPLUS rows (first 3 per LAB_TYPE):</span>
+${syntaxHighlight(JSON.stringify(info.sampleRows, null, 2))}
+`;
+      } else {
+        html += `<span class="json-null">// NAPPLUS returned no rows for any attempt — หน่วยส่งยังไม่ได้บันทึกข้อมูลส่งตรวจในระบบ NAPPLUS หรือช่วงวันที่ไม่ตรง</span>
+`;
+      }
+    }
     if (matchStats.unmatchedRows && matchStats.unmatchedRows.length > 0) {
-      html += `<span class="json-key">Unmatched details:</span>
+      html += `<span class="json-key">Unmatched details (HOSxP rows that did not match):</span>
 ${syntaxHighlight(JSON.stringify(matchStats.unmatchedRows, null, 2))}
 `;
     }
