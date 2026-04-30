@@ -1052,7 +1052,7 @@ UNION ALL
     <ul>
       <li>เมื่อข้อมูลพร้อม กดปุ่ม <code>Send Report to NAPPLUS</code> ที่ Header</li>
       <li>ระบบจะแปลง test_result เป็น JSON object ตาม LAB_TYPE โดยอัตโนมัติ</li>
-      <li>สร้าง LAB_REQUEST_ID format: <code>BL-{HCODE}-{yyMM}-{lab_order_number}</code></li>
+      <li>สร้าง LAB_REQUEST_ID format: <code>{PREFIX}-{HCODE}-{yyMM}-{lab_order_number}</code> โดย PREFIX = <code>BL</code> สำหรับ LAB_TYPE 204, <code>ANTIHIV</code> สำหรับประเภทอื่น</li>
       <li>ส่งข้อมูลผ่าน API set_lab_result ไปยัง NAPPLUS</li>
       <li>ดูผลลัพธ์ได้ที่แท็บ <code>Send Report</code></li>
     </ul>
@@ -1780,7 +1780,67 @@ function formatTestResult(labType, rawResult) {
   }
 }
 
-function buildLabResultPayloads() {
+// Fetch get_lab_request from NAPPLUS for all LAB_TYPEs in the date range
+// and build a Map: "{patient_id}|{lab_type}|{request_date}" -> LAB_REQUEST_ID
+async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
+  const map = new Map();
+  const issues = { fetched: 0, errors: [] };
+
+  for (const labType of labTypes) {
+    const payload = {
+      HEADER: {
+        HCODE_REQUEST: hcode,
+        HCODE_LAB: hcode,
+        LAB_TYPE: labType,
+        PATIENT_ID: '',
+        LAB_REQUEST_ID: '',
+        REQUEST_DATE_FROM: beFrom,
+        REQUEST_DATE_TO: beTo,
+        LAB_STATUS: '0'
+      }
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+      const res = await fetch(NAPPLUS_BASE_URL + '/get_lab_request', {
+        method: 'POST',
+        headers: {
+          'UserName': `LAB${hcode}`,
+          'Password': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
+        data.LAB_REQUEST.forEach(req => {
+          const pid = String(req.PATIENT_ID ?? '').trim();
+          const lt = String(req.LAB_TYPE ?? labType).trim();
+          const rd = String(req.REQUEST_DATE ?? '').trim();
+          const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
+          if (pid && reqId) {
+            map.set(`${pid}|${lt}|${rd}`, reqId);
+            // Also map without date as fallback (in case ±day mismatch)
+            map.set(`${pid}|${lt}`, reqId);
+          }
+        });
+        issues.fetched += data.LAB_REQUEST.length;
+      } else if (data.RESULT !== '1' && data.RESULT !== 1) {
+        issues.errors.push(`${labType}: ${data.RESULT_MESSAGE || 'unknown'}`);
+      }
+    } catch (e) {
+      issues.errors.push(`${labType}: ${e.name === 'AbortError' ? 'Timeout' : e.message}`);
+    }
+  }
+
+  return { map, issues };
+}
+
+function buildLabResultPayloads(napplusMap) {
   const hcode = document.getElementById('hcode').value.trim();
   const dateFrom = document.getElementById('dateFrom').value || todayStr();
   const dateTo = document.getElementById('dateTo').value || todayStr();
@@ -1796,15 +1856,42 @@ function buildLabResultPayloads() {
     grouped[labType].push(row);
   });
 
+  const matchStats = { matched: 0, unmatched: 0, unmatchedRows: [] };
   const payloads = [];
   for (const [labType, rows] of Object.entries(grouped)) {
-    const results = rows.map(row => {
+    const results = [];
+    rows.forEach(row => {
       const rawResult = row.test_result ?? row.TEST_RESULT ?? '';
       const testResult = formatTestResult(labType, rawResult);
 
-      const requestId = buildNapplusRequestId(hcode, row);
+      // Try to match with NAPPLUS LAB_REQUEST_ID
+      const pid = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
+      const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
+      let requestId = '';
+      let matched = false;
 
-      return {
+      if (napplusMap && pid) {
+        // Try patient_id + lab_type + date first
+        requestId = napplusMap.get(`${pid}|${labType}|${rd}`) || '';
+        // Fallback: patient_id + lab_type only
+        if (!requestId) requestId = napplusMap.get(`${pid}|${labType}`) || '';
+        if (requestId) matched = true;
+      }
+
+      if (!requestId) {
+        // No match: skip this row (don't send to NAPPLUS — would be rejected)
+        matchStats.unmatched++;
+        matchStats.unmatchedRows.push({
+          lab_type: labType,
+          patient_id: pid,
+          request_date: rd,
+          lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '')
+        });
+        return;
+      }
+      matchStats.matched++;
+
+      results.push({
         LAB_TYPE: String(labType),
         LAB_REQUEST_ID: requestId,
         RESULT_DATE: String(row.request_date ?? row.REQUEST_DATE ?? ''),
@@ -1814,8 +1901,10 @@ function buildLabResultPayloads() {
         TEST_RESULT: testResult,
         REMARK_NODETECTED: String(row.remark_nodetected ?? row.REMARK_NODETECTED ?? ''),
         LAB_ITEM: String(row.lab_item ?? row.LAB_ITEM ?? '')
-      };
+      });
     });
+
+    if (results.length === 0) continue; // skip empty payload
 
     // HEADER per spec 9.2: NO LAB_REQUEST_ID in HEADER
     payloads.push({
@@ -1829,7 +1918,7 @@ function buildLabResultPayloads() {
     });
   }
 
-  return payloads;
+  return { payloads, matchStats };
 }
 
 function getTodayBE() {
@@ -1840,7 +1929,8 @@ function getTodayBE() {
   return `${y}${m}${dd}`;
 }
 
-// Build NAPPLUS LAB_REQUEST_ID: BL-{HCODE}-{yyMM}-{lab_order_number}
+// Build NAPPLUS LAB_REQUEST_ID: {PREFIX}-{HCODE}-{yyMM}-{lab_order_number}
+// PREFIX: BL for LAB_TYPE 204 (Blood Chemistry), ANTIHIV for others
 function buildNapplusRequestId(hcode, row) {
   const labOrderNum = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '');
   if (!labOrderNum) return '';
@@ -1858,7 +1948,10 @@ function buildNapplusRequestId(hcode, row) {
     yyMM = beYear + mm;
   }
 
-  return `BL-${hcode}-${yyMM}-${labOrderNum}`;
+  const labType = String(row.lab_type ?? row.LAB_TYPE ?? '');
+  const prefix = labType === '204' ? 'BL' : 'ANTIHIV';
+
+  return `${prefix}-${hcode}-${yyMM}-${labOrderNum}`;
 }
 
 async function sendReport() {
@@ -1867,13 +1960,48 @@ async function sendReport() {
 
   const hcode = document.getElementById('hcode').value.trim();
   const apiKey = document.getElementById('apiKey').value.trim();
+  const dateFrom = document.getElementById('dateFrom').value || todayStr();
+  const dateTo = document.getElementById('dateTo').value || todayStr();
+  const beFrom = toBEDate(dateFrom);
+  const beTo = toBEDate(dateTo);
 
   const headerBtn = document.getElementById('headerSendBtn');
   const statusDiv = document.getElementById('sendStatus');
   headerBtn.disabled = true;
-  headerBtn.textContent = 'Sending...';
 
-  const payloads = buildLabResultPayloads();
+  // Step 1: Fetch LAB_REQUEST_IDs from NAPPLUS to match against local data
+  headerBtn.textContent = 'Fetching NAPPLUS requests...';
+  const labTypesInData = [...new Set(filteredData.map(r => String(r.lab_type || r.LAB_TYPE || '')))].filter(Boolean);
+  const { map: napplusMap, issues: fetchIssues } = await fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypesInData);
+
+  if (napplusMap.size === 0) {
+    headerBtn.disabled = false;
+    headerBtn.textContent = 'Send Report to NAPPLUS';
+    const errMsg = fetchIssues.errors.length
+      ? `Fetch get_lab_request failed: ${fetchIssues.errors.join(' | ')}`
+      : 'ไม่พบข้อมูล LAB_REQUEST ใน NAPPLUS - ตรวจสอบว่าหน่วยส่งบันทึกข้อมูลส่งตรวจแล้ว';
+    showToast('err', errMsg);
+    statusDiv.style.display = 'block';
+    statusDiv.className = 'send-status err';
+    statusDiv.innerHTML = errMsg;
+    return;
+  }
+
+  // Step 2: Build payloads using matched LAB_REQUEST_IDs
+  headerBtn.textContent = 'Sending...';
+  const { payloads, matchStats } = buildLabResultPayloads(napplusMap);
+
+  if (payloads.length === 0) {
+    headerBtn.disabled = false;
+    headerBtn.textContent = 'Send Report to NAPPLUS';
+    const errMsg = `ไม่มีรายการที่จับคู่กับ NAPPLUS ได้ (${matchStats.unmatched} รายการไม่ match)`;
+    showToast('err', errMsg);
+    statusDiv.style.display = 'block';
+    statusDiv.className = 'send-status err';
+    statusDiv.innerHTML = errMsg;
+    return;
+  }
+
   const url = NAPPLUS_BASE_URL + '/set_lab_result';
   const username = `LAB${hcode}`;
 
@@ -1939,25 +2067,28 @@ async function sendReport() {
   const allOk = errorCount === 0;
 
   // Show status in sidebar
+  const matchInfo = matchStats.unmatched > 0
+    ? ` (matched ${matchStats.matched}, skipped ${matchStats.unmatched})`
+    : ` (matched ${matchStats.matched})`;
   statusDiv.style.display = 'block';
   statusDiv.className = `send-status ${allOk ? 'ok' : 'err'}`;
   statusDiv.innerHTML = allOk
-    ? `OK - ส่งสำเร็จ ${totalRows} รายการ / ${payloads.length} LAB_TYPE (${elapsed}ms)`
-    : `${successCount} สำเร็จ / ${errorCount} ล้มเหลว (${elapsed}ms)`;
+    ? `OK - ส่งสำเร็จ ${totalRows} รายการ / ${payloads.length} LAB_TYPE${matchInfo} (${elapsed}ms)`
+    : `${successCount} สำเร็จ / ${errorCount} ล้มเหลว${matchInfo} (${elapsed}ms)`;
 
   // Show report tab
   document.getElementById('reportTabBtn').style.display = '';
-  renderReportTab(allResponses, elapsed);
+  renderReportTab(allResponses, elapsed, matchStats);
 
   showToast(
     allOk ? 'ok' : 'err',
     allOk
-      ? `Send Report สำเร็จ (${elapsed}ms) - ${totalRows} รายการ / ${payloads.length} LAB_TYPE`
-      : `Send Report: ${successCount} สำเร็จ, ${errorCount} ล้มเหลว`
+      ? `Send Report สำเร็จ (${elapsed}ms) - ${totalRows} รายการ${matchInfo}`
+      : `Send Report: ${successCount} สำเร็จ, ${errorCount} ล้มเหลว${matchInfo}`
   );
 }
 
-function renderReportTab(allResponses, elapsed) {
+function renderReportTab(allResponses, elapsed, matchStats) {
   const el = document.getElementById('reportContent');
   const hcode = document.getElementById('hcode').value.trim();
 
@@ -1966,6 +2097,18 @@ function renderReportTab(allResponses, elapsed) {
 <span class="json-key">UserName:</span> <span class="json-string">LAB${escHtml(hcode)}</span>
 <span class="json-key">Total requests:</span> <span class="json-number">${allResponses.length}</span>
 `;
+
+  if (matchStats) {
+    html += `<span class="json-key">// == Match Report (get_lab_request from NAPPLUS) ==</span>
+<span class="json-bool">Matched:</span> <span class="json-number">${matchStats.matched}</span>
+<span class="json-null">Unmatched (skipped):</span> <span class="json-number">${matchStats.unmatched}</span>
+`;
+    if (matchStats.unmatchedRows && matchStats.unmatchedRows.length > 0) {
+      html += `<span class="json-key">Unmatched details:</span>
+${syntaxHighlight(JSON.stringify(matchStats.unmatchedRows, null, 2))}
+`;
+    }
+  }
 
   allResponses.forEach((item, i) => {
     const display = { ...item.response };
