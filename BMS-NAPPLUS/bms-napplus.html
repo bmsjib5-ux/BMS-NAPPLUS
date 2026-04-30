@@ -1780,61 +1780,109 @@ function formatTestResult(labType, rawResult) {
   }
 }
 
-// Fetch get_lab_request from NAPPLUS for all LAB_TYPEs in the date range
-// and build a Map: "{patient_id}|{lab_type}|{request_date}" -> LAB_REQUEST_ID
+// Adjust BE date string by N days (positive or negative)
+function adjustBEDate(beStr, deltaDays) {
+  if (!beStr || beStr.length !== 8) return beStr;
+  const y = parseInt(beStr.substring(0, 4)) - 543;
+  const m = parseInt(beStr.substring(4, 6)) - 1;
+  const d = parseInt(beStr.substring(6, 8));
+  const dt = new Date(y, m, d);
+  dt.setDate(dt.getDate() + deltaDays);
+  const newY = dt.getFullYear() + 543;
+  const newM = String(dt.getMonth() + 1).padStart(2, '0');
+  const newD = String(dt.getDate()).padStart(2, '0');
+  return `${newY}${newM}${newD}`;
+}
+
+async function callGetLabRequest(hcode, apiKey, labType, beFrom, beTo, labStatus) {
+  const payload = {
+    HEADER: {
+      HCODE_REQUEST: hcode,
+      HCODE_LAB: hcode,
+      LAB_TYPE: labType,
+      PATIENT_ID: '',
+      LAB_REQUEST_ID: '',
+      REQUEST_DATE_FROM: beFrom,
+      REQUEST_DATE_TO: beTo,
+      LAB_STATUS: labStatus
+    }
+  };
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+    const res = await fetch(NAPPLUS_BASE_URL + '/get_lab_request', {
+      method: 'POST',
+      headers: { 'UserName': `LAB${hcode}`, 'Password': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await res.json();
+    if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
+      return { ok: true, rows: data.LAB_REQUEST };
+    }
+    return { ok: false, error: data.RESULT_MESSAGE || 'unknown' };
+  } catch (e) {
+    return { ok: false, error: e.name === 'AbortError' ? 'Timeout' : e.message };
+  }
+}
+
+// Fetch get_lab_request from NAPPLUS for all LAB_TYPEs and build a Map:
+// "{patient_id}|{lab_type}|{request_date}" -> LAB_REQUEST_ID
+// Strategy: try original date range with LAB_STATUS=0 (pending), then ='1' (sent),
+// then expand date range by ±30 days if still empty.
 async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
   const map = new Map();
-  const issues = { fetched: 0, errors: [] };
+  const issues = { fetched: 0, errors: [], attempts: [] };
+
+  // Expand date range to handle mismatch between HOSxP order date and NAPPLUS request date
+  const beFromExpand = adjustBEDate(beFrom, -30);
+  const beToExpand = adjustBEDate(beTo, 30);
 
   for (const labType of labTypes) {
-    const payload = {
-      HEADER: {
-        HCODE_REQUEST: hcode,
-        HCODE_LAB: hcode,
-        LAB_TYPE: labType,
-        PATIENT_ID: '',
-        LAB_REQUEST_ID: '',
-        REQUEST_DATE_FROM: beFrom,
-        REQUEST_DATE_TO: beTo,
-        LAB_STATUS: '0'
-      }
-    };
+    let rows = [];
+    let attemptLog = `${labType}:`;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
-      const res = await fetch(NAPPLUS_BASE_URL + '/get_lab_request', {
-        method: 'POST',
-        headers: {
-          'UserName': `LAB${hcode}`,
-          'Password': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      const data = await res.json();
+    // Attempt 1: original range, LAB_STATUS=0 (pending)
+    let r = await callGetLabRequest(hcode, apiKey, labType, beFrom, beTo, '0');
+    attemptLog += ` [orig+pending=${r.ok ? r.rows.length : 'err'}]`;
+    if (r.ok && r.rows.length) rows = r.rows;
 
-      if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
-        data.LAB_REQUEST.forEach(req => {
-          const pid = String(req.PATIENT_ID ?? '').trim();
-          const lt = String(req.LAB_TYPE ?? labType).trim();
-          const rd = String(req.REQUEST_DATE ?? '').trim();
-          const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
-          if (pid && reqId) {
-            map.set(`${pid}|${lt}|${rd}`, reqId);
-            // Also map without date as fallback (in case ±day mismatch)
-            map.set(`${pid}|${lt}`, reqId);
-          }
-        });
-        issues.fetched += data.LAB_REQUEST.length;
-      } else if (data.RESULT !== '1' && data.RESULT !== 1) {
-        issues.errors.push(`${labType}: ${data.RESULT_MESSAGE || 'unknown'}`);
-      }
-    } catch (e) {
-      issues.errors.push(`${labType}: ${e.name === 'AbortError' ? 'Timeout' : e.message}`);
+    // Attempt 2: original range, LAB_STATUS=1 (already sent)
+    if (rows.length === 0) {
+      r = await callGetLabRequest(hcode, apiKey, labType, beFrom, beTo, '1');
+      attemptLog += ` [orig+sent=${r.ok ? r.rows.length : 'err'}]`;
+      if (r.ok && r.rows.length) rows = r.rows;
     }
+
+    // Attempt 3: expanded range ±30 days, LAB_STATUS=0
+    if (rows.length === 0) {
+      r = await callGetLabRequest(hcode, apiKey, labType, beFromExpand, beToExpand, '0');
+      attemptLog += ` [exp+pending=${r.ok ? r.rows.length : 'err'}]`;
+      if (r.ok && r.rows.length) rows = r.rows;
+    }
+
+    // Attempt 4: expanded range ±30 days, LAB_STATUS=1
+    if (rows.length === 0) {
+      r = await callGetLabRequest(hcode, apiKey, labType, beFromExpand, beToExpand, '1');
+      attemptLog += ` [exp+sent=${r.ok ? r.rows.length : 'err'}]`;
+      if (r.ok && r.rows.length) rows = r.rows;
+    }
+
+    if (!r.ok) issues.errors.push(`${labType}: ${r.error}`);
+    issues.attempts.push(attemptLog);
+
+    rows.forEach(req => {
+      const pid = String(req.PATIENT_ID ?? '').trim();
+      const lt = String(req.LAB_TYPE ?? labType).trim();
+      const rd = String(req.REQUEST_DATE ?? '').trim();
+      const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
+      if (pid && reqId) {
+        map.set(`${pid}|${lt}|${rd}`, reqId);
+        map.set(`${pid}|${lt}`, reqId);
+      }
+    });
+    issues.fetched += rows.length;
   }
 
   return { map, issues };
@@ -1977,13 +2025,16 @@ async function sendReport() {
   if (napplusMap.size === 0) {
     headerBtn.disabled = false;
     headerBtn.textContent = 'Send Report to NAPPLUS';
-    const errMsg = fetchIssues.errors.length
+    const baseMsg = fetchIssues.errors.length
       ? `Fetch get_lab_request failed: ${fetchIssues.errors.join(' | ')}`
-      : 'ไม่พบข้อมูล LAB_REQUEST ใน NAPPLUS - ตรวจสอบว่าหน่วยส่งบันทึกข้อมูลส่งตรวจแล้ว';
-    showToast('err', errMsg);
+      : 'ไม่พบข้อมูล LAB_REQUEST ใน NAPPLUS (ลองทุก LAB_STATUS และขยายช่วง ±30 วัน) - ตรวจสอบว่าหน่วยส่งบันทึกข้อมูลส่งตรวจที่หน้าจอ NAPPLUS แล้ว';
+    const attemptsMsg = fetchIssues.attempts && fetchIssues.attempts.length
+      ? '<br><span style="font-size:10px; opacity:0.8">Attempts: ' + escHtml(fetchIssues.attempts.join(' | ')) + '</span>'
+      : '';
+    showToast('err', baseMsg);
     statusDiv.style.display = 'block';
     statusDiv.className = 'send-status err';
-    statusDiv.innerHTML = errMsg;
+    statusDiv.innerHTML = baseMsg + attemptsMsg;
     return;
   }
 
