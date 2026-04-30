@@ -1965,24 +1965,20 @@ async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
       const rd = String(req.REQUEST_DATE ?? '').trim();
       const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
 
-      if (reqId) {
-        // Primary key: patient_id + request_date
-        if (pid && rd) {
+      if (reqId && pid) {
+        // ALL match keys MUST include patient_id to avoid cross-patient mismatch
+        // Primary: patient_id + request_date
+        if (rd) {
           map.set(`PID_RD|${pid}|${rd}`, reqId);
           if (pidRaw !== pid) map.set(`PID_RD|${pidRaw}|${rd}`, reqId);
         }
-        // Match by request_date alone (only unique if 1 record per date)
-        if (rd) {
-          map.set(`RD|${rd}`, reqId);
-        }
-        // Legacy: patient_id + lab_type [+ date]
-        if (pid) {
-          map.set(`${pid}|${lt}|${rd}`, reqId);
-          map.set(`${pid}|${lt}`, reqId);
-          if (pidRaw !== pid) {
-            map.set(`${pidRaw}|${lt}|${rd}`, reqId);
-            map.set(`${pidRaw}|${lt}`, reqId);
-          }
+        // patient_id + lab_type + date
+        map.set(`${pid}|${lt}|${rd}`, reqId);
+        // patient_id + lab_type (no date)
+        map.set(`${pid}|${lt}`, reqId);
+        if (pidRaw !== pid) {
+          map.set(`${pidRaw}|${lt}|${rd}`, reqId);
+          map.set(`${pidRaw}|${lt}`, reqId);
         }
       }
     });
@@ -2009,6 +2005,7 @@ function buildLabResultPayloads(napplusMap) {
   });
 
   const matchStats = { matched: 0, unmatched: 0, unmatchedRows: [], unmatchedSourceRows: [] };
+  const consumedReqIds = new Set(); // Prevent reusing same NAPPLUS LAB_REQUEST_ID
   const payloads = [];
   for (const [labType, rows] of Object.entries(grouped)) {
     const results = [];
@@ -2025,34 +2022,34 @@ function buildLabResultPayloads(napplusMap) {
       let requestId = '';
       let matchedBy = '';
 
-      if (napplusMap) {
-        // Priority order:
-        // 1. patient_id + request_date (most specific)
-        // 2. request_date alone (only reliable if 1 rec per date)
-        // 3. patient_id + lab_type + date (legacy fallback)
-        // 4. patient_id + lab_type (loose)
+      if (napplusMap && (pidDigits || pidRaw)) {
+        // ALL keys require patient_id (no date-only fallback to avoid cross-patient mismatch)
         const tries = [
           [`PID_RD|${pidDigits}|${rd}`, 'pid+request_date'],
           [`PID_RD|${pidRaw}|${rd}`, 'pid_raw+request_date'],
-          [`RD|${rd}`, 'request_date_only'],
           [`${pidDigits}|${labType}|${rd}`, 'pid+type+date'],
           [`${pidRaw}|${labType}|${rd}`, 'pid_raw+type+date'],
           [`${pidDigits}|${labType}`, 'pid+type'],
           [`${pidRaw}|${labType}`, 'pid_raw+type'],
         ];
         for (const [key, label] of tries) {
-          if (!key || key.endsWith('|') || key.includes('||')) continue; // skip incomplete keys
+          if (!key || key.startsWith('|') || key.endsWith('|') || key.includes('||')) continue;
           const v = napplusMap.get(key);
-          if (v) { requestId = v; matchedBy = label; break; }
+          if (v && !consumedReqIds.has(v)) {
+            requestId = v;
+            matchedBy = label;
+            consumedReqIds.add(v); // mark as used
+            break;
+          }
         }
       }
 
       if (!requestId) {
-        // Diagnostic: find what's in the map for this lab_type / request_date
+        // Diagnostic: find what's in the map for this lab_type / patient
         const sameTypeKeys = [];
         if (napplusMap) {
           for (const k of napplusMap.keys()) {
-            if ((k.includes(`|${labType}`) || k.startsWith('RD|') || k.startsWith('PID_RD|'))
+            if ((k.includes(`|${labType}`) || k.startsWith('PID_RD|'))
                 && !sameTypeKeys.includes(k)) {
               sameTypeKeys.push(k);
               if (sameTypeKeys.length >= 8) break;
@@ -2068,8 +2065,8 @@ function buildLabResultPayloads(napplusMap) {
           request_date_hosxp: rd,
           tried_keys: [
             `PID_RD|${pidDigits}|${rd}`,
-            `RD|${rd}`,
-            `${pidDigits}|${labType}|${rd}`
+            `${pidDigits}|${labType}|${rd}`,
+            `${pidDigits}|${labType}`
           ],
           available_in_napplus: sameTypeKeys
         });
