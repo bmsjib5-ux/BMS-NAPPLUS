@@ -1889,18 +1889,16 @@ async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
       const lt = String(req.LAB_TYPE ?? labType).trim();
       const rd = String(req.REQUEST_DATE ?? '').trim();
       const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
-      // Extract trailing segment after last hyphen (= HOSxP lab_order_number)
-      const trailingId = reqId.includes('-') ? reqId.substring(reqId.lastIndexOf('-') + 1) : reqId;
 
       if (reqId) {
-        // Primary key: patient_id + trailing lab_order_number
-        if (pid && trailingId) {
-          map.set(`PID_LO|${pid}|${trailingId}`, reqId);
-          if (pidRaw !== pid) map.set(`PID_LO|${pidRaw}|${trailingId}`, reqId);
+        // Primary key: patient_id + request_date
+        if (pid && rd) {
+          map.set(`PID_RD|${pid}|${rd}`, reqId);
+          if (pidRaw !== pid) map.set(`PID_RD|${pidRaw}|${rd}`, reqId);
         }
-        // Match by trailing lab_order_number alone (most reliable - unique per HOSxP)
-        if (trailingId) {
-          map.set(`LO|${trailingId}`, reqId);
+        // Match by request_date alone (only unique if 1 record per date)
+        if (rd) {
+          map.set(`RD|${rd}`, reqId);
         }
         // Legacy: patient_id + lab_type [+ date]
         if (pid) {
@@ -1953,14 +1951,14 @@ function buildLabResultPayloads(napplusMap) {
 
       if (napplusMap) {
         // Priority order:
-        // 1. patient_id + lab_order_number (most specific, both fields)
-        // 2. lab_order_number alone (NAPPLUS LAB_REQUEST_ID trailing segment)
+        // 1. patient_id + request_date (most specific)
+        // 2. request_date alone (only reliable if 1 rec per date)
         // 3. patient_id + lab_type + date (legacy fallback)
         // 4. patient_id + lab_type (loose)
         const tries = [
-          [`PID_LO|${pidDigits}|${labOrder}`, 'pid+lab_order'],
-          [`PID_LO|${pidRaw}|${labOrder}`, 'pid_raw+lab_order'],
-          [`LO|${labOrder}`, 'lab_order_only'],
+          [`PID_RD|${pidDigits}|${rd}`, 'pid+request_date'],
+          [`PID_RD|${pidRaw}|${rd}`, 'pid_raw+request_date'],
+          [`RD|${rd}`, 'request_date_only'],
           [`${pidDigits}|${labType}|${rd}`, 'pid+type+date'],
           [`${pidRaw}|${labType}|${rd}`, 'pid_raw+type+date'],
           [`${pidDigits}|${labType}`, 'pid+type'],
@@ -1974,11 +1972,11 @@ function buildLabResultPayloads(napplusMap) {
       }
 
       if (!requestId) {
-        // Diagnostic: find what's in the map for this lab_type / lab_order
+        // Diagnostic: find what's in the map for this lab_type / request_date
         const sameTypeKeys = [];
         if (napplusMap) {
           for (const k of napplusMap.keys()) {
-            if ((k.includes(`|${labType}`) || k.startsWith('LO|') || k.startsWith('PID_LO|'))
+            if ((k.includes(`|${labType}`) || k.startsWith('RD|') || k.startsWith('PID_RD|'))
                 && !sameTypeKeys.includes(k)) {
               sameTypeKeys.push(k);
               if (sameTypeKeys.length >= 8) break;
@@ -1993,8 +1991,8 @@ function buildLabResultPayloads(napplusMap) {
           lab_order_hosxp: labOrder,
           request_date_hosxp: rd,
           tried_keys: [
-            `PID_LO|${pidDigits}|${labOrder}`,
-            `LO|${labOrder}`,
+            `PID_RD|${pidDigits}|${rd}`,
+            `RD|${rd}`,
             `${pidDigits}|${labType}|${rd}`
           ],
           available_in_napplus: sameTypeKeys
