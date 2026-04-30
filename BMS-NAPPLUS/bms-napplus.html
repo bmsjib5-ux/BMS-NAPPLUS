@@ -873,6 +873,7 @@
       <!--<button class="tab-btn" onclick="showTab('sql', this)">SQL Source</button>-->
       <button class="tab-btn" onclick="showTab('check', this)">ตรวจสอบข้อมูล</button>
       <button class="tab-btn" onclick="showTab('result', this)">ผลตรวจ</button>
+      <button class="tab-btn" onclick="showTab('sendlog', this); renderSendLogTab();">Send Log</button>
       <button class="tab-btn" onclick="showTab('report', this)" id="reportTabBtn" style="display:none">Send Report</button>
     </div>
 
@@ -941,6 +942,22 @@
         </div>
       </div>
       <div class="table-wrap" id="resultTableWrap" style="display:none"></div>
+    </div>
+
+    <!-- Tab: Send Log -->
+    <div class="tab-content" id="tab-sendlog">
+      <div class="check-toolbar">
+        <span class="check-label">บันทึกการส่งผล Lab → NAPPLUS (เก็บใน localStorage)</span>
+        <div class="toolbar-spacer"></div>
+        <button class="lab-pill" onclick="setSendLogFilter('all',this)" data-filter="all" id="logFilterAll" style="cursor:pointer">All</button>
+        <button class="lab-pill" onclick="setSendLogFilter('success',this)" data-filter="success" id="logFilterSuccess" style="cursor:pointer">Success</button>
+        <button class="lab-pill" onclick="setSendLogFilter('failed',this)" data-filter="failed" id="logFilterFailed" style="cursor:pointer">Failed</button>
+        <button class="lab-pill" onclick="setSendLogFilter('pending',this)" data-filter="pending" id="logFilterPending" style="cursor:pointer">Pending</button>
+        <span class="check-count" id="sendLogCount" style="display:inline">0 รายการ</span>
+        <button class="btn btn-primary check-btn" onclick="renderSendLogTab()">Refresh</button>
+        <button class="toolbar-btn" onclick="clearSendLog()" style="color:var(--error); border-color:var(--error)">Clear Log</button>
+      </div>
+      <div class="table-wrap" id="sendLogTableWrap" style="overflow:auto"></div>
     </div>
 
     <!-- Tab: Report -->
@@ -1933,10 +1950,11 @@ function buildLabResultPayloads(napplusMap) {
     grouped[labType].push(row);
   });
 
-  const matchStats = { matched: 0, unmatched: 0, unmatchedRows: [] };
+  const matchStats = { matched: 0, unmatched: 0, unmatchedRows: [], unmatchedSourceRows: [] };
   const payloads = [];
   for (const [labType, rows] of Object.entries(grouped)) {
     const results = [];
+    const sourceRows = [];
     rows.forEach(row => {
       const rawResult = row.test_result ?? row.TEST_RESULT ?? '';
       const testResult = formatTestResult(labType, rawResult);
@@ -1997,9 +2015,11 @@ function buildLabResultPayloads(napplusMap) {
           ],
           available_in_napplus: sameTypeKeys
         });
+        matchStats.unmatchedSourceRows.push(row);
         return;
       }
       matchStats.matched++;
+      sourceRows.push({ row, requestId, matchedBy });
 
       results.push({
         LAB_TYPE: String(labType),
@@ -2024,7 +2044,8 @@ function buildLabResultPayloads(napplusMap) {
         RESULT_DATE_FROM: String(beFrom),
         RESULT_DATE_TO: String(beTo)
       },
-      LAB_RESULT: results
+      LAB_RESULT: results,
+      _sourceRows: sourceRows
     });
   }
 
@@ -2112,6 +2133,15 @@ async function sendReport() {
     statusDiv.style.display = 'block';
     statusDiv.className = 'send-status err';
     statusDiv.innerHTML = errMsg;
+    // Log unmatched rows
+    if (matchStats.unmatchedSourceRows && matchStats.unmatchedSourceRows.length > 0) {
+      updateSendLogEntries(matchStats.unmatchedSourceRows.map(r => ({
+        row: r,
+        status: 'unmatched',
+        napplusReqId: '',
+        message: 'ไม่พบ LAB_REQUEST_ID ที่ตรงกันใน NAPPLUS'
+      })));
+    }
     // Show report tab with match diagnostics even when no matches
     document.getElementById('reportTabBtn').style.display = '';
     matchStats.napplusInfo = { attempts: fetchIssues.attempts, sampleRows: fetchIssues.sampleRows, mapSize: napplusMap.size };
@@ -2138,6 +2168,9 @@ async function sendReport() {
     totalRows += payload.LAB_RESULT.length;
     let response;
 
+    // Strip internal sourceRows from request body
+    const requestBody = { HEADER: payload.HEADER, LAB_RESULT: payload.LAB_RESULT };
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
@@ -2149,7 +2182,7 @@ async function sendReport() {
           'Password': apiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
 
@@ -2173,13 +2206,34 @@ async function sendReport() {
     const isOk = response.RESULT === '1' || response.RESULT === 1;
     if (isOk) successCount++; else errorCount++;
 
+    // Update Send Log per row in this batch
+    const status = isOk ? 'success' : 'failed';
+    const msg = response.RESULT_MESSAGE || (isOk ? 'OK' : 'Failed');
+    const logRows = (payload._sourceRows || []).map(sr => ({
+      row: sr.row,
+      status: status,
+      napplusReqId: sr.requestId,
+      message: msg
+    }));
+    if (logRows.length > 0) updateSendLogEntries(logRows);
+
     allResponses.push({
       labType: payload.HEADER.LAB_TYPE,
       rowCount: payload.LAB_RESULT.length,
-      payload: payload,
+      payload: requestBody,
       response: response,
       ok: isOk
     });
+  }
+
+  // Log unmatched rows as 'unmatched' (so they appear in send log)
+  if (matchStats.unmatchedSourceRows && matchStats.unmatchedSourceRows.length > 0) {
+    updateSendLogEntries(matchStats.unmatchedSourceRows.map(r => ({
+      row: r,
+      status: 'unmatched',
+      napplusReqId: '',
+      message: 'ไม่พบ LAB_REQUEST_ID ที่ตรงกันใน NAPPLUS'
+    })));
   }
 
   const elapsed = Date.now() - startTime;
@@ -2598,6 +2652,10 @@ function init() {
   document.getElementById('dateFrom').value = today;
   document.getElementById('dateTo').value = today;
 
+  // Set Send Log filter default to "all"
+  const allFilterBtn = document.getElementById('logFilterAll');
+  if (allFilterBtn) allFilterBtn.classList.add('active');
+
   // Load saved NAPPLUS config
   loadNapplusConfig();
 
@@ -2635,6 +2693,177 @@ function init() {
     updateSessionStatus();
     handleConnect();
   }
+}
+
+// == Send Log (localStorage per hcode) ==
+let sendLogFilter = 'all';
+
+function getSendLogKey() {
+  const hcode = document.getElementById('hcode')?.value?.trim() || 'unknown';
+  return `napplus-sendlog-${hcode}`;
+}
+
+function loadSendLog() {
+  try {
+    const raw = localStorage.getItem(getSendLogKey());
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveSendLog(log) {
+  try { localStorage.setItem(getSendLogKey(), JSON.stringify(log)); } catch(e) {}
+}
+
+function makeLogKey(row) {
+  // unique per HOSxP record
+  const lt = String(row.lab_type ?? row.LAB_TYPE ?? '');
+  const lo = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '');
+  const li = String(row.lab_item ?? row.LAB_ITEM ?? '');
+  return `${lt}|${lo}|${li}`;
+}
+
+function updateSendLogEntries(rowsWithStatus) {
+  const log = loadSendLog();
+  const now = new Date().toISOString();
+  rowsWithStatus.forEach(({ row, status, napplusReqId, message }) => {
+    const key = makeLogKey(row);
+    const prev = log[key] || {};
+    log[key] = {
+      lab_type: String(row.lab_type ?? row.LAB_TYPE ?? ''),
+      lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? ''),
+      lab_item: String(row.lab_item ?? row.LAB_ITEM ?? ''),
+      patient_id: String(row.patient_id ?? row.PATIENT_ID ?? ''),
+      hn: String(row.hn ?? row.HN ?? ''),
+      request_date: String(row.request_date ?? row.REQUEST_DATE ?? ''),
+      napplus_lab_request_id: napplusReqId || prev.napplus_lab_request_id || '',
+      status: status,                // 'success' | 'failed' | 'unmatched'
+      message: message || '',
+      sent_at: now,
+      attempt_count: (prev.attempt_count || 0) + 1
+    };
+  });
+  saveSendLog(log);
+}
+
+function clearSendLog() {
+  if (!confirm('ลบ log ทั้งหมดสำหรับโรงพยาบาลนี้?')) return;
+  localStorage.removeItem(getSendLogKey());
+  showToast('info', 'Cleared log');
+  renderSendLogTab();
+}
+
+function setSendLogFilter(filter, el) {
+  sendLogFilter = filter;
+  document.querySelectorAll('#tab-sendlog .lab-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderSendLogTab();
+}
+
+function renderSendLogTab() {
+  const wrap = document.getElementById('sendLogTableWrap');
+  const log = loadSendLog();
+
+  // Build a set of keys already in log (for marking pending)
+  const logKeys = new Set(Object.keys(log));
+
+  // Add pending entries (in current filteredData but not in log)
+  const allEntries = [];
+  Object.entries(log).forEach(([k, v]) => {
+    allEntries.push({ key: k, ...v });
+  });
+  filteredData.forEach(row => {
+    const k = makeLogKey(row);
+    if (!logKeys.has(k)) {
+      allEntries.push({
+        key: k,
+        lab_type: String(row.lab_type ?? row.LAB_TYPE ?? ''),
+        lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? ''),
+        lab_item: String(row.lab_item ?? row.LAB_ITEM ?? ''),
+        patient_id: String(row.patient_id ?? row.PATIENT_ID ?? ''),
+        hn: String(row.hn ?? row.HN ?? ''),
+        request_date: String(row.request_date ?? row.REQUEST_DATE ?? ''),
+        napplus_lab_request_id: '',
+        status: 'pending',
+        message: 'ยังไม่ได้ส่ง',
+        sent_at: '',
+        attempt_count: 0
+      });
+    }
+  });
+
+  // Filter
+  let entries = allEntries;
+  if (sendLogFilter !== 'all') {
+    entries = entries.filter(e => e.status === sendLogFilter);
+  }
+
+  // Sort: failed first, then pending, then success; newest first within group
+  const statusOrder = { failed: 0, pending: 1, success: 2, unmatched: 3 };
+  entries.sort((a, b) => {
+    const so = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9);
+    if (so !== 0) return so;
+    return (b.sent_at || '').localeCompare(a.sent_at || '');
+  });
+
+  // Update count + filter pill counts
+  const counts = { all: allEntries.length, success: 0, failed: 0, pending: 0, unmatched: 0 };
+  allEntries.forEach(e => { counts[e.status] = (counts[e.status] || 0) + 1; });
+  document.getElementById('sendLogCount').textContent = `${entries.length} / ${counts.all} รายการ`;
+  document.getElementById('logFilterAll').textContent = `All (${counts.all})`;
+  document.getElementById('logFilterSuccess').textContent = `Success (${counts.success})`;
+  document.getElementById('logFilterFailed').textContent = `Failed (${counts.failed})`;
+  document.getElementById('logFilterPending').textContent = `Pending (${counts.pending})`;
+
+  if (entries.length === 0) {
+    wrap.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13px">ไม่มีข้อมูล (ยังไม่เคยส่งผลและยังไม่มีข้อมูลใน Table)</div>';
+    return;
+  }
+
+  const statusBadge = (st) => {
+    const colors = {
+      success: ['var(--success-bg)', 'var(--success)'],
+      failed:  ['var(--error-bg)',   'var(--error)'],
+      pending: ['var(--warn-bg)',    'var(--warn)'],
+      unmatched: ['var(--surface2)', 'var(--text-muted)']
+    };
+    const [bg, fg] = colors[st] || colors.unmatched;
+    const labels = { success: 'สำเร็จ', failed: 'ล้มเหลว', pending: 'ยังไม่ส่ง', unmatched: 'ไม่ match' };
+    return `<span style="display:inline-block; padding:1px 8px; border-radius:4px; font-size:10px; font-weight:700; background:${bg}; color:${fg}">${labels[st] || st}</span>`;
+  };
+
+  const labTypeNames = {'101':'ANTIHIV','102':'PCR','201':'CD4','202':'VL','203':'DR','204':'BC'};
+  const fmtDate = (s) => s && s.length === 8 ? `${s.substring(6,8)}/${s.substring(4,6)}/${s.substring(0,4)}` : (s || '-');
+  const fmtSent = (s) => {
+    if (!s) return '-';
+    try { const d = new Date(s); return d.toLocaleString('th-TH', {hour12:false}); } catch(e) { return s; }
+  };
+
+  let html = `<table class="result-table"><thead><tr>
+    <th>Status</th><th>Lab Type</th><th>HN</th><th>Patient ID</th>
+    <th>Lab Item</th><th>Request Date</th>
+    <th>HOSxP Lab Order</th><th>NAPPLUS LAB_REQUEST_ID</th>
+    <th>Attempts</th><th>Sent At</th><th>Message</th>
+  </tr></thead><tbody>`;
+
+  entries.forEach(e => {
+    const lt = e.lab_type || '';
+    const typeName = labTypeNames[lt] || lt;
+    html += `<tr>
+      <td>${statusBadge(e.status)}</td>
+      <td><span class="type-badge t${lt}" style="display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:700">${escHtml(lt + ' ' + typeName)}</span></td>
+      <td>${escHtml(e.hn || '-')}</td>
+      <td>${maskPatientId(e.patient_id)}</td>
+      <td title="${escHtml(e.lab_item)}">${escHtml(e.lab_item || '-')}</td>
+      <td>${fmtDate(e.request_date)}</td>
+      <td>${escHtml(e.lab_order || '-')}</td>
+      <td>${escHtml(e.napplus_lab_request_id || '-')}</td>
+      <td style="text-align:center">${e.attempt_count || 0}</td>
+      <td>${fmtSent(e.sent_at)}</td>
+      <td title="${escHtml(e.message)}">${escHtml(e.message || '-')}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
 }
 
 // == Auto Refresh ==
