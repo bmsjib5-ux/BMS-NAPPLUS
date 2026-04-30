@@ -1500,6 +1500,43 @@ async function runQuery() {
   showToast('ok', `สำเร็จ - ${lastData.length} รายการ (${elapsed}ms)`);
 }
 
+// == Selection (which rows to send) ==
+let selectedKeys = new Set();
+
+function rowKey(row) {
+  const lt = String(row.lab_type ?? row.LAB_TYPE ?? '');
+  const lo = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '');
+  const li = String(row.lab_item ?? row.LAB_ITEM ?? '');
+  return `${lt}|${lo}|${li}`;
+}
+
+function toggleRowSelect(key, checked) {
+  if (checked) selectedKeys.add(key); else selectedKeys.delete(key);
+  updateSelectAllState();
+  updateSendBtnState();
+}
+
+function toggleSelectAll(checked) {
+  selectedKeys.clear();
+  if (checked) filteredData.forEach(r => selectedKeys.add(rowKey(r)));
+  document.querySelectorAll('.row-select-cb').forEach(cb => { cb.checked = checked; });
+  updateSendBtnState();
+}
+
+function updateSelectAllState() {
+  const cb = document.getElementById('selectAllCb');
+  if (!cb) return;
+  const total = filteredData.length;
+  const sel = selectedKeys.size;
+  cb.checked = total > 0 && sel === total;
+  cb.indeterminate = sel > 0 && sel < total;
+}
+
+function getSelectedRows() {
+  if (selectedKeys.size === 0) return filteredData;
+  return filteredData.filter(r => selectedKeys.has(rowKey(r)));
+}
+
 // == Render Table ==
 function renderTable(data) {
   const wrap = document.getElementById('tableWrap');
@@ -1511,6 +1548,9 @@ function renderTable(data) {
     return;
   }
 
+  // Default: select all rows when (re)rendering
+  selectedKeys = new Set(data.map(rowKey));
+
   const table = document.createElement('table');
   table.className = 'result-table';
 
@@ -1520,9 +1560,12 @@ function renderTable(data) {
     Object.keys(row).forEach(k => { if (!fields.includes(k)) fields.push(k); });
   });
 
-  // Header
+  // Header (with select-all checkbox column)
   const thead = document.createElement('thead');
-  thead.innerHTML = `<tr>${fields.map(f => `<th>${escHtml(f)}</th>`).join('')}</tr>`;
+  thead.innerHTML = `<tr>
+    <th style="width:32px; text-align:center"><input type="checkbox" id="selectAllCb" checked onchange="toggleSelectAll(this.checked)" style="cursor:pointer"></th>
+    ${fields.map(f => `<th>${escHtml(f)}</th>`).join('')}
+  </tr>`;
   table.appendChild(thead);
 
   // Body
@@ -1533,6 +1576,14 @@ function renderTable(data) {
   const tbody = document.createElement('tbody');
   data.forEach(row => {
     const tr = document.createElement('tr');
+    const k = rowKey(row);
+
+    // Checkbox cell
+    const cbTd = document.createElement('td');
+    cbTd.style.textAlign = 'center';
+    cbTd.innerHTML = `<input type="checkbox" class="row-select-cb" data-key="${escHtml(k)}" checked onchange="toggleRowSelect(this.dataset.key, this.checked)" style="cursor:pointer">`;
+    tr.appendChild(cbTd);
+
     fields.forEach(f => {
       const td = document.createElement('td');
       let val = row[f];
@@ -1658,8 +1709,15 @@ let napplusConnected = false;
 
 function updateSendBtnState() {
   const hasData = filteredData.length > 0;
-  const enabled = napplusConnected && hasData;
-  document.getElementById('headerSendBtn').disabled = !enabled;
+  const selCount = selectedKeys ? selectedKeys.size : 0;
+  const enabled = napplusConnected && hasData && selCount > 0;
+  const btn = document.getElementById('headerSendBtn');
+  btn.disabled = !enabled;
+  if (hasData && selCount < filteredData.length) {
+    btn.textContent = `Send Report to NAPPLUS (${selCount})`;
+  } else {
+    btn.textContent = 'Send Report to NAPPLUS';
+  }
 }
 
 function updateNapplusUsername() {
@@ -1940,7 +1998,7 @@ function buildLabResultPayloads(napplusMap) {
   const dateTo = document.getElementById('dateTo').value || todayStr();
   const beFrom = toBEDate(dateFrom);
   const beTo = toBEDate(dateTo);
-  const data = filteredData;
+  const data = getSelectedRows();
 
   // Group by LAB_TYPE - one payload per LAB_TYPE
   const grouped = {};
@@ -2102,7 +2160,9 @@ async function sendReport() {
 
   // Step 1: Fetch LAB_REQUEST_IDs from NAPPLUS to match against local data
   headerBtn.textContent = 'Fetching NAPPLUS requests...';
-  const labTypesInData = [...new Set(filteredData.map(r => String(r.lab_type || r.LAB_TYPE || '')))].filter(Boolean);
+  const selectedRows = getSelectedRows();
+  if (selectedRows.length === 0) { showToast('err', 'กรุณาเลือกอย่างน้อย 1 รายการ'); return; }
+  const labTypesInData = [...new Set(selectedRows.map(r => String(r.lab_type || r.LAB_TYPE || '')))].filter(Boolean);
   const { map: napplusMap, issues: fetchIssues } = await fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypesInData);
 
   if (napplusMap.size === 0) {
