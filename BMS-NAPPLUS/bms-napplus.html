@@ -1878,13 +1878,27 @@ async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
       const lt = String(req.LAB_TYPE ?? labType).trim();
       const rd = String(req.REQUEST_DATE ?? '').trim();
       const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
-      if (pid && reqId) {
-        map.set(`${pid}|${lt}|${rd}`, reqId);
-        map.set(`${pid}|${lt}`, reqId);
-        // Also keep raw form in case PID has letters (e.g., nap_number)
-        if (pidRaw !== pid) {
-          map.set(`${pidRaw}|${lt}|${rd}`, reqId);
-          map.set(`${pidRaw}|${lt}`, reqId);
+      // Extract trailing segment after last hyphen (= HOSxP lab_order_number)
+      const trailingId = reqId.includes('-') ? reqId.substring(reqId.lastIndexOf('-') + 1) : reqId;
+
+      if (reqId) {
+        // Primary key: patient_id + trailing lab_order_number
+        if (pid && trailingId) {
+          map.set(`PID_LO|${pid}|${trailingId}`, reqId);
+          if (pidRaw !== pid) map.set(`PID_LO|${pidRaw}|${trailingId}`, reqId);
+        }
+        // Match by trailing lab_order_number alone (most reliable - unique per HOSxP)
+        if (trailingId) {
+          map.set(`LO|${trailingId}`, reqId);
+        }
+        // Legacy: patient_id + lab_type [+ date]
+        if (pid) {
+          map.set(`${pid}|${lt}|${rd}`, reqId);
+          map.set(`${pid}|${lt}`, reqId);
+          if (pidRaw !== pid) {
+            map.set(`${pidRaw}|${lt}|${rd}`, reqId);
+            map.set(`${pidRaw}|${lt}`, reqId);
+          }
         }
       }
     });
@@ -1922,32 +1936,41 @@ function buildLabResultPayloads(napplusMap) {
       const pidRaw = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
       const pidDigits = pidRaw.replace(/\D/g, '');
       const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
+      const labOrder = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '').trim();
       let requestId = '';
       let matchedBy = '';
 
-      if (napplusMap && (pidRaw || pidDigits)) {
-        // Try in order: digits+lt+date, raw+lt+date, digits+lt, raw+lt
+      if (napplusMap) {
+        // Priority order:
+        // 1. patient_id + lab_order_number (most specific, both fields)
+        // 2. lab_order_number alone (NAPPLUS LAB_REQUEST_ID trailing segment)
+        // 3. patient_id + lab_type + date (legacy fallback)
+        // 4. patient_id + lab_type (loose)
         const tries = [
-          [`${pidDigits}|${labType}|${rd}`, 'digits+date'],
-          [`${pidRaw}|${labType}|${rd}`, 'raw+date'],
-          [`${pidDigits}|${labType}`, 'digits'],
-          [`${pidRaw}|${labType}`, 'raw'],
+          [`PID_LO|${pidDigits}|${labOrder}`, 'pid+lab_order'],
+          [`PID_LO|${pidRaw}|${labOrder}`, 'pid_raw+lab_order'],
+          [`LO|${labOrder}`, 'lab_order_only'],
+          [`${pidDigits}|${labType}|${rd}`, 'pid+type+date'],
+          [`${pidRaw}|${labType}|${rd}`, 'pid_raw+type+date'],
+          [`${pidDigits}|${labType}`, 'pid+type'],
+          [`${pidRaw}|${labType}`, 'pid_raw+type'],
         ];
         for (const [key, label] of tries) {
-          if (key.startsWith('|')) continue; // skip empty pid
+          if (!key || key.endsWith('|') || key.includes('||')) continue; // skip incomplete keys
           const v = napplusMap.get(key);
           if (v) { requestId = v; matchedBy = label; break; }
         }
       }
 
       if (!requestId) {
-        // Diagnostic: find what's in the map for this lab_type
+        // Diagnostic: find what's in the map for this lab_type / lab_order
         const sameTypeKeys = [];
         if (napplusMap) {
           for (const k of napplusMap.keys()) {
-            if (k.includes(`|${labType}`) && !sameTypeKeys.includes(k)) {
+            if ((k.includes(`|${labType}`) || k.startsWith('LO|') || k.startsWith('PID_LO|'))
+                && !sameTypeKeys.includes(k)) {
               sameTypeKeys.push(k);
-              if (sameTypeKeys.length >= 5) break;
+              if (sameTypeKeys.length >= 8) break;
             }
           }
         }
@@ -1956,9 +1979,13 @@ function buildLabResultPayloads(napplusMap) {
           lab_type: labType,
           patient_id_hosxp: pidRaw,
           patient_id_digits: pidDigits,
+          lab_order_hosxp: labOrder,
           request_date_hosxp: rd,
-          lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? ''),
-          tried_keys: [`${pidDigits}|${labType}|${rd}`, `${pidDigits}|${labType}`],
+          tried_keys: [
+            `PID_LO|${pidDigits}|${labOrder}`,
+            `LO|${labOrder}`,
+            `${pidDigits}|${labType}|${rd}`
+          ],
           available_in_napplus: sameTypeKeys
         });
         return;
