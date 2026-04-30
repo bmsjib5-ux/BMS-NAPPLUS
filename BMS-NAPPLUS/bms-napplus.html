@@ -861,6 +861,15 @@
         <span class="elapsed-badge" id="elapsedTime"></span>
       </div>
       <div class="toolbar-spacer"></div>
+      <select id="autoRefreshSec" onchange="setAutoRefreshInterval(this.value)" class="toolbar-btn" style="cursor:pointer; padding-right:6px" title="ช่วงเวลา auto refresh">
+        <option value="15">15s</option>
+        <option value="30">30s</option>
+        <option value="60" selected>60s</option>
+        <option value="120">2m</option>
+        <option value="300">5m</option>
+        <option value="600">10m</option>
+        <option value="1800">30m</option>
+      </select>
       <button class="toolbar-btn" id="autoRefreshBtn" onclick="toggleAutoRefresh()" style="font-weight:700">Auto 60s OFF</button>
       <button class="toolbar-btn" onclick="exportCsv()">Export CSV</button>
       <button class="toolbar-btn" onclick="copySql()">Copy SQL</button>
@@ -2923,8 +2932,9 @@ function renderSendLogTab() {
   wrap.innerHTML = html;
 }
 
-// == Auto Refresh ==
-const AUTO_REFRESH_MS = 60000;
+// == Auto Refresh (configurable interval) ==
+const LS_AUTO_REFRESH_SEC = 'napplus-auto-refresh-sec';
+let autoRefreshSec = parseInt(localStorage.getItem(LS_AUTO_REFRESH_SEC)) || 60;
 let autoRefreshTimer = null;
 
 function autoRefreshQuery() {
@@ -2936,7 +2946,7 @@ function autoRefreshQuery() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  autoRefreshTimer = setInterval(autoRefreshQuery, AUTO_REFRESH_MS);
+  autoRefreshTimer = setInterval(autoRefreshQuery, autoRefreshSec * 1000);
   updateAutoRefreshUI(true);
 }
 
@@ -2949,12 +2959,31 @@ function toggleAutoRefresh() {
   if (autoRefreshTimer) stopAutoRefresh(); else startAutoRefresh();
 }
 
+function setAutoRefreshInterval(sec) {
+  const n = parseInt(sec);
+  if (!n || n < 5) { showToast('err', 'ค่าต้องมากกว่า 5 วินาที'); return; }
+  autoRefreshSec = n;
+  localStorage.setItem(LS_AUTO_REFRESH_SEC, String(n));
+  if (autoRefreshTimer) startAutoRefresh(); // restart with new interval
+  updateAutoRefreshUI(!!autoRefreshTimer);
+  showToast('info', `Auto refresh interval: ${n}s`);
+}
+
 function updateAutoRefreshUI(on) {
   const btn = document.getElementById('autoRefreshBtn');
+  const sel = document.getElementById('autoRefreshSec');
+  if (sel) sel.value = autoRefreshSec;
   if (!btn) return;
   btn.classList.toggle('active', on);
-  btn.textContent = on ? 'Auto 60s ON' : 'Auto 60s OFF';
+  btn.textContent = on ? `Auto ${autoRefreshSec}s ON` : `Auto ${autoRefreshSec}s OFF`;
 }
+
+// Sync dropdown with saved interval
+(function() {
+  const sel = document.getElementById('autoRefreshSec');
+  if (sel) sel.value = autoRefreshSec;
+  updateAutoRefreshUI(false);
+})();
 
 init();
 if (sessionConnected) startAutoRefresh();

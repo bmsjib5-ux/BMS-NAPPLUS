@@ -632,6 +632,15 @@
     <button class="dash-range-btn" data-range="week" onclick="setRange('week',this)">7 Days</button>
     <button class="dash-range-btn active" data-range="month" onclick="setRange('month',this)">30 Days</button>
     <button class="dash-range-btn" data-range="quarter" onclick="setRange('quarter',this)">90 Days</button>
+    <select id="autoRefreshSec" onchange="setAutoRefreshInterval(this.value)" class="dash-range-btn" style="cursor:pointer; padding-right:6px" title="ช่วงเวลา auto refresh">
+      <option value="15">15s</option>
+      <option value="30">30s</option>
+      <option value="60" selected>60s</option>
+      <option value="120">2m</option>
+      <option value="300">5m</option>
+      <option value="600">10m</option>
+      <option value="1800">30m</option>
+    </select>
     <button class="dash-range-btn active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">Auto 60s ON</button>
     <button class="refresh-btn" id="refreshBtn" onclick="loadDashboard()">Refresh</button>
   </div>
@@ -1402,7 +1411,8 @@ function renderRecentTable(data, elapsed) {
       let yyMM = '';
       if (reqDateStr.length === 8) { yyMM = reqDateStr.substring(2, 6); }
       else { const n = new Date(); yyMM = String(n.getFullYear()+543).substring(2) + String(n.getMonth()+1).padStart(2,'0'); }
-      labReqId = `BL-${hcode}-${yyMM}-${labReqIdRaw}`;
+      const prefix = lt === '204' ? 'BL' : 'ANTIHIV';
+      labReqId = `${prefix}-${hcode}-${yyMM}-${labReqIdRaw}`;
     }
     const status = String(row.lab_status || row.LAB_STATUS || '');
     const statusHtml = status === '1'
@@ -1450,15 +1460,16 @@ async function init() {
   document.getElementById('emptyState').style.display = 'flex';
 }
 
-// == Auto Refresh ==
-const AUTO_REFRESH_MS = 60000;
+// == Auto Refresh (configurable) ==
+const LS_AUTO_REFRESH_SEC = 'napplus-auto-refresh-sec';
+let autoRefreshSec = parseInt(localStorage.getItem(LS_AUTO_REFRESH_SEC)) || 60;
 let autoRefreshTimer = null;
 
 function startAutoRefresh() {
   stopAutoRefresh();
   autoRefreshTimer = setInterval(() => {
     if (sessionConnected) loadDashboard();
-  }, AUTO_REFRESH_MS);
+  }, autoRefreshSec * 1000);
   updateAutoRefreshUI(true);
 }
 
@@ -1471,12 +1482,28 @@ function toggleAutoRefresh() {
   if (autoRefreshTimer) stopAutoRefresh(); else startAutoRefresh();
 }
 
+function setAutoRefreshInterval(sec) {
+  const n = parseInt(sec);
+  if (!n || n < 5) { showToast('err', 'ค่าต้องมากกว่า 5 วินาที'); return; }
+  autoRefreshSec = n;
+  localStorage.setItem(LS_AUTO_REFRESH_SEC, String(n));
+  if (autoRefreshTimer) startAutoRefresh();
+  updateAutoRefreshUI(!!autoRefreshTimer);
+  showToast('info', `Auto refresh interval: ${n}s`);
+}
+
 function updateAutoRefreshUI(on) {
   const btn = document.getElementById('autoRefreshBtn');
+  const sel = document.getElementById('autoRefreshSec');
+  if (sel) sel.value = autoRefreshSec;
   if (!btn) return;
   btn.classList.toggle('active', on);
-  btn.textContent = on ? 'Auto 60s ON' : 'Auto 60s OFF';
+  btn.textContent = on ? `Auto ${autoRefreshSec}s ON` : `Auto ${autoRefreshSec}s OFF`;
 }
+
+// Sync dropdown with saved interval
+const sel = document.getElementById('autoRefreshSec');
+if (sel) sel.value = autoRefreshSec;
 
 init().then(() => { if (sessionConnected) startAutoRefresh(); });
 </script>
