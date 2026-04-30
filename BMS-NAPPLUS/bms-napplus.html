@@ -1873,13 +1873,19 @@ async function fetchNapplusRequestMap(hcode, apiKey, beFrom, beTo, labTypes) {
     issues.attempts.push(attemptLog);
 
     rows.forEach(req => {
-      const pid = String(req.PATIENT_ID ?? '').trim();
+      const pidRaw = String(req.PATIENT_ID ?? '').trim();
+      const pid = pidRaw.replace(/\D/g, ''); // strip non-digits
       const lt = String(req.LAB_TYPE ?? labType).trim();
       const rd = String(req.REQUEST_DATE ?? '').trim();
       const reqId = String(req.LAB_REQUEST_ID ?? '').trim();
       if (pid && reqId) {
         map.set(`${pid}|${lt}|${rd}`, reqId);
         map.set(`${pid}|${lt}`, reqId);
+        // Also keep raw form in case PID has letters (e.g., nap_number)
+        if (pidRaw !== pid) {
+          map.set(`${pidRaw}|${lt}|${rd}`, reqId);
+          map.set(`${pidRaw}|${lt}`, reqId);
+        }
       }
     });
     issues.fetched += rows.length;
@@ -1913,27 +1919,47 @@ function buildLabResultPayloads(napplusMap) {
       const testResult = formatTestResult(labType, rawResult);
 
       // Try to match with NAPPLUS LAB_REQUEST_ID
-      const pid = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
+      const pidRaw = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
+      const pidDigits = pidRaw.replace(/\D/g, '');
       const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
       let requestId = '';
-      let matched = false;
+      let matchedBy = '';
 
-      if (napplusMap && pid) {
-        // Try patient_id + lab_type + date first
-        requestId = napplusMap.get(`${pid}|${labType}|${rd}`) || '';
-        // Fallback: patient_id + lab_type only
-        if (!requestId) requestId = napplusMap.get(`${pid}|${labType}`) || '';
-        if (requestId) matched = true;
+      if (napplusMap && (pidRaw || pidDigits)) {
+        // Try in order: digits+lt+date, raw+lt+date, digits+lt, raw+lt
+        const tries = [
+          [`${pidDigits}|${labType}|${rd}`, 'digits+date'],
+          [`${pidRaw}|${labType}|${rd}`, 'raw+date'],
+          [`${pidDigits}|${labType}`, 'digits'],
+          [`${pidRaw}|${labType}`, 'raw'],
+        ];
+        for (const [key, label] of tries) {
+          if (key.startsWith('|')) continue; // skip empty pid
+          const v = napplusMap.get(key);
+          if (v) { requestId = v; matchedBy = label; break; }
+        }
       }
 
       if (!requestId) {
-        // No match: skip this row (don't send to NAPPLUS — would be rejected)
+        // Diagnostic: find what's in the map for this lab_type
+        const sameTypeKeys = [];
+        if (napplusMap) {
+          for (const k of napplusMap.keys()) {
+            if (k.includes(`|${labType}`) && !sameTypeKeys.includes(k)) {
+              sameTypeKeys.push(k);
+              if (sameTypeKeys.length >= 5) break;
+            }
+          }
+        }
         matchStats.unmatched++;
         matchStats.unmatchedRows.push({
           lab_type: labType,
-          patient_id: pid,
-          request_date: rd,
-          lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '')
+          patient_id_hosxp: pidRaw,
+          patient_id_digits: pidDigits,
+          request_date_hosxp: rd,
+          lab_order: String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? ''),
+          tried_keys: [`${pidDigits}|${labType}|${rd}`, `${pidDigits}|${labType}`],
+          available_in_napplus: sameTypeKeys
         });
         return;
       }
