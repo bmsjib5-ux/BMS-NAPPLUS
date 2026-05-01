@@ -1115,19 +1115,43 @@ async function loadDashboard() {
 
   const elapsed = Date.now() - startTime;
 
-  // Render everything
-  renderSummaryCards(allData);
-  renderDonutChart(allData);
-  renderDailyChart(allData, days);
-  renderStatusChart(allData, sentData);
-  renderTrendChart(allData, days);
+  // Dedupe by patient_id + request_date + lab_type (one event = one unique combo)
+  const dedupedData = dedupeByPatientDateType(allData);
+  const dedupedSent = dedupeByPatientDateType(sentData);
+
+  // Render everything (counts use deduped, recent table uses raw)
+  renderSummaryCards(dedupedData);
+  renderDonutChart(dedupedData);
+  renderDailyChart(dedupedData, days);
+  renderStatusChart(dedupedData, dedupedSent);
+  renderTrendChart(dedupedData, days);
   renderRecentTable(allData, elapsed);
 
   btn.disabled = false;
   btn.textContent = 'Refresh';
   hideLoading();
 
-  showToast('ok', `Dashboard loaded: ${allData.length} records (${elapsed}ms)`);
+  showToast('ok', `Dashboard loaded: ${dedupedData.length} unique / ${allData.length} rows (${elapsed}ms)`);
+}
+
+// Dedupe rows by patient_id + request_date + lab_type
+// Same patient with multiple lab_items on same date+type counts once
+function dedupeByPatientDateType(data) {
+  if (!Array.isArray(data)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const row of data) {
+    const pid = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
+    const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
+    const lt = String(row.lab_type ?? row.LAB_TYPE ?? '').trim();
+    // If patient_id missing, fall back to lab_request_id to avoid collapsing distinct rows
+    const fallback = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '').trim();
+    const key = `${pid || fallback}|${rd}|${lt}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(row);
+  }
+  return result;
 }
 
 // == Render Summary Cards ==
