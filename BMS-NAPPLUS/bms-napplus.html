@@ -982,7 +982,7 @@
 <div class="modal-overlay" id="infoModal" onclick="if(event.target===this)toggleInfo()">
   <div class="modal">
     <button class="modal-close" onclick="toggleInfo()">&times;</button>
-    <h2>ขั้นตอนการตั้งค่าและใช้งาน BMS NAPPLUS</h2>
+    <h2>ขั้นตอนการใช้งาน BMS-NAPPLUS</h2>
 
     <h3><span class="step-num">1</span> สร้าง View Table: bms_napplus ในฐานข้อมูล HOSxP</h3>
     <p>สร้าง View ในฐานข้อมูล PostgreSQL ของ HOSxP เพื่อดึงข้อมูล LAB ที่ต้องส่ง NAPPLUS</p>
@@ -1053,7 +1053,29 @@ UNION ALL
     AND (i.gen_order_prefix::text = ANY (ARRAY['WBC','Hb','Cr','Chol','FBS','TG','SGPT']::text[]));</pre>
     <div class="note">หมายเหตุ: LAB_TYPE 101-203 ใช้ gen_order_prefix ตรง, LAB_TYPE 204 (Blood Chemistry) ดึงจาก lab_items ที่เป็น WBC/Hb/Cr/Chol/FBS/TG/SGPT เฉพาะผู้ป่วยที่มี nap_number ใน clinicmember</div>
 
-    <h3><span class="step-num">2</span> ตั้งค่า NAPPLUS API</h3>
+    <h3><span class="step-num">2</span> ตั้งค่าข้อมูลพื้นฐาน Lab items กำหนดช่อง Prefix</h3>
+    <p>กำหนดช่อง <code>gen_order_prefix</code> ในตาราง <code>lab_items</code> ตามรหัสประเภทตรวจของ NAPPLUS:</p>
+    <ul>
+      <li><strong>ANTIHIV</strong> = <code>101</code></li>
+      <li><strong>PCR</strong> = <code>102</code></li>
+      <li><strong>CD4</strong> = <code>201</code></li>
+      <li><strong>Viral Load</strong> = <code>202</code></li>
+      <li><strong>Drug Resistance</strong> = <code>203</code></li>
+      <li><strong>Blood Chemistry</strong> = <code>204</code> (เฉพาะ ส่งตรวจ Blood Chemistry จะต้องกำหนด Items ดังนี้)
+        <ul>
+          <li>WBC = <code>WBC</code></li>
+          <li>Hb = <code>Hb</code></li>
+          <li>Cr = <code>Cr</code></li>
+          <li>Chol = <code>Chol</code></li>
+          <li>FBS = <code>FBS</code></li>
+          <li>TG = <code>TG</code></li>
+          <li>SGPT(ALT) = <code>SGPT</code></li>
+        </ul>
+      </li>
+    </ul>
+    <div class="note">เงื่อนไขการดึงข้อมูล Blood Chemistry: คนไข้จะต้องลงทะเบียน <code>clinicmember</code> ก่อน และกำหนด <strong>Nap no.</strong> (nap_number) ด้วย</div>
+
+    <h3><span class="step-num">3</span> ตั้งค่า NAPPLUS API</h3>
     <p>กดปุ่ม <code>ตั้งค่า</code> ที่ Header แล้วกรอกข้อมูล:</p>
     <ul>
       <li><strong>BMS Session</strong> - กรอก Session ID จาก HOSxP แล้วกด Connect Session</li>
@@ -1061,20 +1083,20 @@ UNION ALL
     </ul>
     <div class="note">API Key (Token) ได้จากระบบ NAPPLUS: เมนู "การจัดการข้อมูลระบบ" &rarr; "User และ Key สำหรับการเข้าใช้งานผ่านทาง API" &rarr; กด Gen Key</div>
 
-    <h3><span class="step-num">3</span> Query ข้อมูล</h3>
+    <h3><span class="step-num">4</span> Query ข้อมูล</h3>
     <ul>
       <li>เลือกช่วงวันที่ และ Lab Type ที่ต้องการ</li>
       <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก View bms_napplus</li>
       <li>ตรวจสอบข้อมูลในตาราง Table</li>
     </ul>
 
-    <h3><span class="step-num">4</span> ตรวจสอบข้อมูลจาก NAPPLUS</h3>
+    <h3><span class="step-num">5</span> ตรวจสอบข้อมูลจาก NAPPLUS</h3>
     <ul>
       <li>กดแท็บ <code>ตรวจสอบข้อมูล</code> แล้วกดปุ่ม "ตรวจสอบข้อมูล" เพื่อดึงรายการคำสั่งตรวจ (get_lab_request) จาก NAPPLUS</li>
       <li>กดแท็บ <code>ผลตรวจ</code> แล้วกดปุ่ม "ดึงผลตรวจ" เพื่อดูผลที่บันทึกแล้ว (get_lab_result)</li>
     </ul>
 
-    <h3><span class="step-num">5</span> Send Report to NAPPLUS</h3>
+    <h3><span class="step-num">6</span> Send Report to NAPPLUS</h3>
     <ul>
       <li>เมื่อข้อมูลพร้อม กดปุ่ม <code>Send Report to NAPPLUS</code> ที่ Header</li>
       <li>ระบบจะแปลง test_result เป็น JSON object ตาม LAB_TYPE โดยอัตโนมัติ</li>
@@ -1089,6 +1111,16 @@ UNION ALL
 201 CD4      : {"result1": "20.0", "result2": "350"}
 202 VL       : {"result1": "&lt;", "result2": "99.9", "result3": "copies/ml"}
 204 BC       : {"WBC": "4500", "Hb": "12.5", "Cr": "7.5", ...}</pre>
+
+    <h3><span class="step-num">7</span> ขั้นตอนทำงานโดยย่อในการใช้ชุดคำสั่ง API</h3>
+    <p>เมื่อสร้าง User และ Gen Token แล้ว ดำเนินการตามลำดับงาน (NAPPLUS Lab – Workflow) ดังนี้:</p>
+    <ol style="padding-left:20px; line-height:2; font-size:12px; color:var(--text-muted);">
+      <li><strong>หน่วยส่ง</strong> บันทึกข้อมูลส่งตรวจผ่านหน้าจอ NAPPLUS</li>
+      <li><strong>หน่วยตรวจ</strong> เรียก API <code>get_lab_request</code> เพื่อดึงข้อมูลการส่งตรวจใหม่ ตามวันที่ส่งตรวจ</li>
+      <li><strong>หน่วยตรวจ</strong> เรียก API <code>set_lab_result</code> เพื่อบันทึกผลการตรวจเข้าสู่ระบบ NAPPLUS หลังจากที่มีการจับคู่ผลการตรวจกับคำสั่งตรวจที่ได้จาก NAPPLUS</li>
+      <li><strong>หน่วยตรวจ</strong> เรียก API <code>get_lab_result</code> เพื่อตรวจสอบผลการบันทึกผลในระบบ NAPPLUS หรือ</li>
+      <li><strong>หน่วยส่ง</strong> เข้าดูข้อมูลผลการตรวจ ผ่านหน้าจอ NAPPLUS</li>
+    </ol>
   </div>
 </div>
 
