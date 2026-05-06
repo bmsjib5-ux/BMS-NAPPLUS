@@ -1214,10 +1214,12 @@ async function loadDashboard() {
 
   // Render everything
   renderSummaryCards(allData);
-  renderDonutChart(allData);
-  renderDailyChart(allData, days);
-  renderStatusChart(allData, sentData);
-  renderTrendChart(allData, days);
+  try {
+    renderDonutChart(allData);
+    renderDailyChart(allData, days);
+    renderStatusChart(allData, sentData);
+    renderTrendChart(allData, days);
+  } catch (e) { console.warn('Chart render skipped:', e.message); }
   renderRecentTable(allData, elapsed);
 
   btn.disabled = false;
@@ -1605,10 +1607,12 @@ function loadPreviewDashboard() {
   const elapsed = Date.now() - startTime;
 
   renderSummaryCards(allData);
-  renderDonutChart(allData);
-  renderDailyChart(allData, days);
-  renderStatusChart(allData, sentData);
-  renderTrendChart(allData, days);
+  try {
+    renderDonutChart(allData);
+    renderDailyChart(allData, days);
+    renderStatusChart(allData, sentData);
+    renderTrendChart(allData, days);
+  } catch (e) { console.warn('Chart render skipped:', e.message); }
   renderRecentTable(allData, elapsed);
 
   showToast('info', `Preview: ${allData.length} sample records`);
