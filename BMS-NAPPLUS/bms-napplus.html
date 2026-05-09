@@ -1429,40 +1429,32 @@ function buildSql() {
   const beTo = toBEDate(dateTo);
 
   return `SELECT * FROM (
-SELECT h.hn, i.gen_order_prefix::integer AS lab_type,
-  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_request,
-  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_lab,
-  CASE WHEN i.gen_order_prefix::text = ANY (ARRAY['101','102']) THEN p.cid ELSE ''::character varying END::text AS patient_id,
-  h.lab_order_number::text AS lab_request_id,
-  to_char((date_part('year', h.order_date) + 543)::integer * 10000 + date_part('month', h.order_date)::integer * 100 + date_part('day', h.order_date)::integer, 'FM00000000') AS request_date,
-  ptt.name::text AS patient_right, 'Y'::text AS request_approved_status, '1'::text AS lab_status,
-  i.lab_items_name::text AS lab_item, ''::text AS request_approved_remark,
-  o.lab_order_result::text AS test_result, ''::text AS remark_nodetected
+SELECT h.hn, i.gen_order_prefix::int AS lab_type,
+  CASE WHEN i.gen_order_prefix IN ('101','102') THEN p.cid ELSE '' END AS patient_id,
+  h.lab_order_number AS lab_request_id,
+  to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
+  ptt.name AS patient_right, i.lab_items_name AS lab_item, o.lab_order_result AS test_result
 FROM lab_head h
-  LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
-  JOIN lab_items i ON i.lab_items_code = o.lab_items_code
-  LEFT JOIN patient p ON p.hn = h.hn
-  LEFT JOIN ovst ov ON ov.vn = h.vn
-  LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
-WHERE i.gen_order_prefix::text = ANY (ARRAY['101','102','201','202','203'])
+  LEFT JOIN lab_order o ON o.lab_order_number=h.lab_order_number
+  JOIN lab_items i ON i.lab_items_code=o.lab_items_code
+  LEFT JOIN patient p ON p.hn=h.hn
+  LEFT JOIN ovst ov ON ov.vn=h.vn
+  LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
+WHERE i.gen_order_prefix IN ('101','102','201','202','203')
 UNION ALL
-SELECT h.hn, 204 AS lab_type,
-  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_request,
-  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_lab,
-  CASE WHEN i.gen_order_prefix::text = ANY (ARRAY['101','102']) THEN p.cid ELSE cm.nap_number::character varying END::text AS patient_id,
-  h.lab_order_number::text AS lab_request_id,
-  to_char((date_part('year', h.order_date) + 543)::integer * 10000 + date_part('month', h.order_date)::integer * 100 + date_part('day', h.order_date)::integer, 'FM00000000') AS request_date,
-  ptt.name::text AS patient_right, 'Y'::text AS request_approved_status, '1'::text AS lab_status,
-  CASE WHEN i.gen_order_prefix::text = 'SGPT' THEN 'SGPT(ALT)'::character varying ELSE i.gen_order_prefix END::text AS lab_item,
-  ''::text AS request_approved_remark, o.lab_order_result::text AS test_result, ''::text AS remark_nodetected
+SELECT h.hn, 204 AS lab_type, cm.nap_number AS patient_id,
+  h.lab_order_number AS lab_request_id,
+  to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
+  ptt.name AS patient_right,
+  CASE WHEN i.gen_order_prefix='SGPT' THEN 'SGPT(ALT)' ELSE i.gen_order_prefix END AS lab_item,
+  o.lab_order_result AS test_result
 FROM lab_head h
-  LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
-  JOIN lab_items i ON i.lab_items_code = o.lab_items_code
-  LEFT JOIN patient p ON p.hn = h.hn
-  LEFT JOIN ovst ov ON ov.vn = h.vn
-  LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
-  LEFT JOIN clinicmember cm ON cm.hn = h.hn
-WHERE cm.nap_number IS NOT NULL AND i.gen_order_prefix::text = ANY (ARRAY['WBC','Hb','Cr','Chol','FBS','TG','SGPT'])
+  LEFT JOIN lab_order o ON o.lab_order_number=h.lab_order_number
+  JOIN lab_items i ON i.lab_items_code=o.lab_items_code
+  LEFT JOIN ovst ov ON ov.vn=h.vn
+  LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
+  LEFT JOIN clinicmember cm ON cm.hn=h.hn
+WHERE cm.nap_number IS NOT NULL AND i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT')
 ) t WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
 }
 
