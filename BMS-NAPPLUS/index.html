@@ -1045,6 +1045,7 @@ FROM lab_head h
 WHERE i.gen_order_prefix IN ('101','102','201','202','203') OR (i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') AND cm.nap_number IS NOT NULL)
 ) t WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
   const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${encodeURIComponent(APP_NAME)}`;
+  console.log(`[queryLabData] URL length: ${fullUrl.length} chars`);
 
   try {
     const controller = new AbortController();
@@ -1058,15 +1059,24 @@ WHERE i.gen_order_prefix IN ('101','102','201','202','203') OR (i.gen_order_pref
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    const response = await res.json();
-
+    const text = await res.text();
+    let response;
+    try { response = JSON.parse(text); }
+    catch (e) {
+      // Non-JSON response (nginx error page)
+      const errMsg = res.status === 404
+        ? `URL too long (${fullUrl.length} chars) — server rejected. ลดช่วงวันที่ลง`
+        : `HTTP ${res.status}: ${text.substring(0, 80)}`;
+      showToast('err', errMsg);
+      return [];
+    }
     if (response.MessageCode !== 200) {
       showToast('err', `Query Error: ${response.Message || 'Unknown'}`);
       return [];
     }
     return response.data || response.result?.data || [];
   } catch (e) {
-    showToast('err', `Connection Error: ${e.message}`);
+    if (e.name !== 'AbortError') showToast('err', `Connection Error: ${e.message}`);
     return [];
   }
 }

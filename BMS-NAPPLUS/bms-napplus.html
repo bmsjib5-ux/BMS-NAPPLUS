@@ -1486,6 +1486,7 @@ async function runQuery() {
   const sql = buildSql();
   const minified = minifySql(sql);
   const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(minified)}&app=${encodeURIComponent(APP_NAME)}`;
+  console.log(`[runQuery] URL length: ${fullUrl.length} chars`);
 
   const startTime = Date.now();
   let response;
@@ -1504,7 +1505,21 @@ async function runQuery() {
     });
 
     clearTimeout(timeoutId);
-    response = await res.json();
+
+    // Try parse JSON; fallback to text for non-JSON errors (nginx 404 HTML)
+    const text = await res.text();
+    try {
+      response = JSON.parse(text);
+    } catch (parseErr) {
+      // Non-JSON response (likely nginx error page)
+      if (res.status === 404) {
+        response = { MessageCode: 404, Message: `URL too long for server (${fullUrl.length} chars). กรุณาลดช่วงวันที่หรือ Lab Type` };
+      } else if (res.status === 414) {
+        response = { MessageCode: 414, Message: 'URI Too Long - ลดช่วงวันที่ลง' };
+      } else {
+        response = { MessageCode: res.status, Message: `Server returned ${res.status} (non-JSON): ${text.substring(0, 100)}` };
+      }
+    }
 
     if (res.status === 401) {
       response = { MessageCode: 401, Message: 'Unauthorized - API Key ไม่ถูกต้องหรือหมดอายุ' };
