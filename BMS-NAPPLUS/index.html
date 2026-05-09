@@ -1016,8 +1016,11 @@ async function queryLabData(dateFrom, dateTo) {
 
   const beFrom = toBEDate(dateFrom);
   const beTo = toBEDate(dateTo);
+  // Get hospital code from BMS session (no need to query opdconfig)
+  const hc = String(userInfo?.hospital_code || userInfo?.hcode || userInfo?.hospcode || '').replace(/'/g, '');
   const sql = `SELECT * FROM (
 SELECT h.hn, i.gen_order_prefix::int AS lab_type,
+  '${hc}' AS hcode_request, '${hc}' AS hcode_lab,
   CASE WHEN i.gen_order_prefix IN ('101','102') THEN p.cid ELSE '' END AS patient_id,
   h.lab_order_number AS lab_request_id,
   to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
@@ -1030,7 +1033,9 @@ FROM lab_head h
   LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
 WHERE i.gen_order_prefix IN ('101','102','201','202','203')
 UNION ALL
-SELECT h.hn, 204 AS lab_type, cm.nap_number AS patient_id,
+SELECT h.hn, 204 AS lab_type,
+  '${hc}' AS hcode_request, '${hc}' AS hcode_lab,
+  cm.nap_number AS patient_id,
   h.lab_order_number AS lab_request_id,
   to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
   ptt.name AS patient_right,
