@@ -984,9 +984,9 @@
     <button class="modal-close" onclick="toggleInfo()">&times;</button>
     <h2>ขั้นตอนการใช้งาน BMS-NAPPLUS</h2>
 
-    <h3><span class="step-num">1</span> สร้าง View Table: bms_napplus ในฐานข้อมูล HOSxP</h3>
-    <p>สร้าง View ในฐานข้อมูล PostgreSQL ของ HOSxP เพื่อดึงข้อมูล LAB ที่ต้องส่ง NAPPLUS</p>
-    <pre>CREATE OR REPLACE VIEW bms_napplus AS
+    <h3><span class="step-num">1</span> โครงสร้าง SQL Query (ดึงตรงจาก HOSxP)</h3>
+    <p>ระบบ Query ข้อมูล LAB ผ่าน HOSxP โดยตรง <strong>ไม่ต้องสร้าง View Table</strong> ใช้ SQL ต่อไปนี้:</p>
+    <pre>
  SELECT h.hn,i.gen_order_prefix::integer AS lab_type,
     (( SELECT opdconfig.hospitalcode
            FROM opdconfig
@@ -1086,7 +1086,7 @@ UNION ALL
     <h3><span class="step-num">4</span> Query ข้อมูล</h3>
     <ul>
       <li>เลือกช่วงวันที่ และ Lab Type ที่ต้องการ</li>
-      <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก View bms_napplus</li>
+      <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก HOSxP โดยตรง</li>
       <li>ตรวจสอบข้อมูลในตาราง Table</li>
     </ul>
 
@@ -1428,7 +1428,42 @@ function buildSql() {
   const beFrom = toBEDate(dateFrom);
   const beTo = toBEDate(dateTo);
 
-  return `SELECT * FROM bms_napplus WHERE request_date BETWEEN '${beFrom}' AND '${beTo}'`;
+  return `SELECT * FROM (
+SELECT h.hn, i.gen_order_prefix::integer AS lab_type,
+  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_request,
+  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_lab,
+  CASE WHEN i.gen_order_prefix::text = ANY (ARRAY['101','102']) THEN p.cid ELSE ''::character varying END::text AS patient_id,
+  h.lab_order_number::text AS lab_request_id,
+  to_char((date_part('year', h.order_date) + 543)::integer * 10000 + date_part('month', h.order_date)::integer * 100 + date_part('day', h.order_date)::integer, 'FM00000000') AS request_date,
+  ptt.name::text AS patient_right, 'Y'::text AS request_approved_status, '1'::text AS lab_status,
+  i.lab_items_name::text AS lab_item, ''::text AS request_approved_remark,
+  o.lab_order_result::text AS test_result, ''::text AS remark_nodetected
+FROM lab_head h
+  LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
+  JOIN lab_items i ON i.lab_items_code = o.lab_items_code
+  LEFT JOIN patient p ON p.hn = h.hn
+  LEFT JOIN ovst ov ON ov.vn = h.vn
+  LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
+WHERE i.gen_order_prefix::text = ANY (ARRAY['101','102','201','202','203'])
+UNION ALL
+SELECT h.hn, 204 AS lab_type,
+  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_request,
+  ((SELECT opdconfig.hospitalcode FROM opdconfig LIMIT 1))::text AS hcode_lab,
+  CASE WHEN i.gen_order_prefix::text = ANY (ARRAY['101','102']) THEN p.cid ELSE cm.nap_number::character varying END::text AS patient_id,
+  h.lab_order_number::text AS lab_request_id,
+  to_char((date_part('year', h.order_date) + 543)::integer * 10000 + date_part('month', h.order_date)::integer * 100 + date_part('day', h.order_date)::integer, 'FM00000000') AS request_date,
+  ptt.name::text AS patient_right, 'Y'::text AS request_approved_status, '1'::text AS lab_status,
+  CASE WHEN i.gen_order_prefix::text = 'SGPT' THEN 'SGPT(ALT)'::character varying ELSE i.gen_order_prefix END::text AS lab_item,
+  ''::text AS request_approved_remark, o.lab_order_result::text AS test_result, ''::text AS remark_nodetected
+FROM lab_head h
+  LEFT JOIN lab_order o ON o.lab_order_number = h.lab_order_number
+  JOIN lab_items i ON i.lab_items_code = o.lab_items_code
+  LEFT JOIN patient p ON p.hn = h.hn
+  LEFT JOIN ovst ov ON ov.vn = h.vn
+  LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
+  LEFT JOIN clinicmember cm ON cm.hn = h.hn
+WHERE cm.nap_number IS NOT NULL AND i.gen_order_prefix::text = ANY (ARRAY['WBC','Hb','Cr','Chol','FBS','TG','SGPT'])
+) t WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
 }
 
 // == SQL Syntax Highlight ==
