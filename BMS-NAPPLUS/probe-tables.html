@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>HOSxP Table Access Probe</title>
+<style>
+  body { font-family: 'Sarabun', sans-serif; background: #0a1628; color: #e8eef6; padding: 20px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 18px; margin-bottom: 14px; }
+  .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+  input, textarea, button { padding: 6px 10px; border-radius: 4px; border: 1px solid #1e3a5f; background: #0f1f38; color: #e8eef6; font-family: inherit; }
+  input { width: 360px; }
+  textarea { width: 100%; height: 100px; font-family: 'Courier New', monospace; font-size: 12px; }
+  button { background: #0891b2; border-color: #0891b2; color: #fff; font-weight: 600; cursor: pointer; }
+  button:hover { background: #0aa5cc; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+  th, td { padding: 6px 10px; border: 1px solid #1e3a5f; text-align: left; }
+  th { background: #152847; color: #22d3ee; }
+  .ok { color: #10b981; font-weight: 700; }
+  .err { color: #ef4444; font-weight: 700; }
+  .small { font-size: 11px; color: #7a8da6; }
+  pre { background: #0f1f38; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>HOSxP Table Access Probe</h1>
+
+<div class="row">
+  <label>Session ID:</label>
+  <input id="sessionId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value="">
+  <button onclick="connectSession()">Connect</button>
+  <span id="connStatus" class="small">not connected</span>
+</div>
+
+<div class="row">
+  <label>Tables to probe (one per line):</label>
+</div>
+<textarea id="tables">lab_head
+lab_order
+lab_items
+patient
+ovst
+ovst_seq
+opitemrece
+pttype
+visit_pttype
+clinicmember
+opdconfig
+sys_var
+doctor
+person
+drugitems
+nondrugitems
+ipt
+spclty
+hospcode
+icd101
+icd9cm
+xray_head
+xray_film
+pg_user
+pg_roles
+pg_database
+information_schema.tables</textarea>
+
+<div class="row">
+  <button onclick="probeAll()" id="probeBtn">Probe All Tables</button>
+  <button onclick="downloadCsv()" id="csvBtn" disabled>Export CSV</button>
+  <span id="probeStatus" class="small"></span>
+</div>
+
+<table id="result">
+  <thead>
+    <tr><th>Table</th><th>Status</th><th>HTTP</th><th>MessageCode</th><th>Rows</th><th>Detail</th></tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<script>
+const APP_NAME = 'BMS.PROBE';
+let apiUrl = '';
+let authKey = '';
+let results = [];
+
+async function connectSession() {
+  const sid = document.getElementById('sessionId').value.trim();
+  if (!sid) { alert('Enter session id'); return; }
+  document.getElementById('connStatus').textContent = 'connecting...';
+  try {
+    const res = await fetch(`https://hosxp.net/phapi/PasteJSON?Action=GET&code=${encodeURIComponent(sid)}`);
+    const data = await res.json();
+    if (data.MessageCode !== 200) {
+      document.getElementById('connStatus').innerHTML = `<span class="err">${data.Message || 'Failed'}</span>`;
+      return;
+    }
+    const r = data.result || {};
+    const ui = r.user_info || {};
+    apiUrl = (r.key_value?.['hosxp.api_url'] || ui['hosxp.api_url'] || ui.bms_url || '').replace(/\/$/, '');
+    authKey = r.key_value?.['hosxp.api_auth_key'] || ui['hosxp.api_auth_key'] || ui.bms_session_code || (typeof r.key_value === 'string' ? r.key_value : '');
+    document.getElementById('connStatus').innerHTML = `<span class="ok">OK</span> ${ui.name || ''} @ ${apiUrl}`;
+  } catch(e) {
+    document.getElementById('connStatus').innerHTML = `<span class="err">${e.message}</span>`;
+  }
+}
+
+async function probeTable(tbl) {
+  const sql = `SELECT 1 AS ok FROM ${tbl} LIMIT 1`;
+  const url = `${apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${APP_NAME}`;
+  const t0 = Date.now();
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${authKey}`, 'Content-Type': 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const text = await res.text();
+    let body;
+    try { body = JSON.parse(text); } catch(e) { body = { raw: text.substring(0, 200) }; }
+    return {
+      table: tbl,
+      http: res.status,
+      messageCode: body.MessageCode || '-',
+      message: body.Message || (body.raw ? body.raw : '') || (res.ok ? 'OK' : ''),
+      rows: Array.isArray(body.data) ? body.data.length : (body.record_count ?? '-'),
+      ms: Date.now() - t0,
+      ok: body.MessageCode === 200,
+    };
+  } catch(e) {
+    return { table: tbl, http: 0, messageCode: 0, message: e.name === 'AbortError' ? 'Timeout' : e.message, rows: '-', ms: Date.now()-t0, ok: false };
+  }
+}
+
+async function probeAll() {
+  if (!apiUrl) { alert('Connect session first'); return; }
+  const tables = document.getElementById('tables').value.split('\n').map(s => s.trim()).filter(Boolean);
+  document.getElementById('probeBtn').disabled = true;
+  document.getElementById('csvBtn').disabled = true;
+  results = [];
+  document.getElementById('tbody').innerHTML = '';
+  for (let i = 0; i < tables.length; i++) {
+    document.getElementById('probeStatus').textContent = `probing ${i+1}/${tables.length}: ${tables[i]}...`;
+    const r = await probeTable(tables[i]);
+    results.push(r);
+    appendRow(r);
+  }
+  document.getElementById('probeStatus').textContent = `Done ${results.length} tables. Blocked: ${results.filter(r => !r.ok).length}`;
+  document.getElementById('probeBtn').disabled = false;
+  document.getElementById('csvBtn').disabled = false;
+}
+
+function appendRow(r) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${r.table}</td>
+    <td><span class="${r.ok ? 'ok' : 'err'}">${r.ok ? 'ALLOWED' : 'BLOCKED'}</span></td>
+    <td>${r.http}</td>
+    <td>${r.messageCode}</td>
+    <td>${r.rows}</td>
+    <td title="${r.message.replace(/"/g,'&quot;')}">${(r.message || '').substring(0, 120)}</td>
+  `;
+  document.getElementById('tbody').appendChild(tr);
+}
+
+function downloadCsv() {
+  const csv = ['table,status,http,messageCode,rows,message',
+    ...results.map(r => [r.table, r.ok ? 'ALLOWED' : 'BLOCKED', r.http, r.messageCode, r.rows, '"' + (r.message || '').replace(/"/g, '""') + '"'].join(','))
+  ].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'table-probe.csv';
+  a.click();
+}
+
+// Pre-fill from URL session id if present
+const params = new URLSearchParams(location.search);
+const sid = params.get('bms-session-id');
+if (sid) {
+  document.getElementById('sessionId').value = sid;
+  connectSession();
+}
+</script>
+</body>
+</html>

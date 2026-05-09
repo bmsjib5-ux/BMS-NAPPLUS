@@ -1431,35 +1431,27 @@ function buildSql() {
   const hc = String(userInfo?.hospital_code || userInfo?.hcode || userInfo?.hospcode || '').replace(/'/g, '');
 
   return `SELECT * FROM (
-SELECT h.hn, i.gen_order_prefix::int AS lab_type,
+SELECT h.hn,
+  CASE WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') THEN 204 ELSE i.gen_order_prefix::int END AS lab_type,
   '${hc}' AS hcode_request, '${hc}' AS hcode_lab,
-  CASE WHEN i.gen_order_prefix IN ('101','102') THEN p.cid ELSE '' END AS patient_id,
+  CASE WHEN i.gen_order_prefix IN ('101','102') THEN p.cid
+       WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') THEN cm.nap_number
+       ELSE '' END AS patient_id,
   h.lab_order_number AS lab_request_id,
   to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
-  ptt.name AS patient_right, i.lab_items_name AS lab_item, o.lab_order_result AS test_result
+  ptt.name AS patient_right,
+  CASE WHEN i.gen_order_prefix='SGPT' THEN 'SGPT(ALT)'
+       WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG') THEN i.gen_order_prefix
+       ELSE i.lab_items_name END AS lab_item,
+  o.lab_order_result AS test_result
 FROM lab_head h
   LEFT JOIN lab_order o ON o.lab_order_number=h.lab_order_number
   JOIN lab_items i ON i.lab_items_code=o.lab_items_code
   LEFT JOIN patient p ON p.hn=h.hn
   LEFT JOIN ovst ov ON ov.vn=h.vn
   LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
-WHERE i.gen_order_prefix IN ('101','102','201','202','203')
-UNION ALL
-SELECT h.hn, 204 AS lab_type,
-  '${hc}' AS hcode_request, '${hc}' AS hcode_lab,
-  cm.nap_number AS patient_id,
-  h.lab_order_number AS lab_request_id,
-  to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
-  ptt.name AS patient_right,
-  CASE WHEN i.gen_order_prefix='SGPT' THEN 'SGPT(ALT)' ELSE i.gen_order_prefix END AS lab_item,
-  o.lab_order_result AS test_result
-FROM lab_head h
-  LEFT JOIN lab_order o ON o.lab_order_number=h.lab_order_number
-  JOIN lab_items i ON i.lab_items_code=o.lab_items_code
-  LEFT JOIN ovst ov ON ov.vn=h.vn
-  LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
   LEFT JOIN clinicmember cm ON cm.hn=h.hn
-WHERE cm.nap_number IS NOT NULL AND i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT')
+WHERE i.gen_order_prefix IN ('101','102','201','202','203') OR (i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') AND cm.nap_number IS NOT NULL)
 ) t WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
 }
 
@@ -1807,6 +1799,8 @@ async function fetchAndConnectNapplus() {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
+    // sys_var may be blocked at HOSxP-side (returns 4xx/5xx without CORS headers).
+    // Use no-cors-aware handling: catch all errors silently.
     const res = await fetch(fullUrl, {
       method: 'GET',
       headers: {
@@ -1814,9 +1808,12 @@ async function fetchAndConnectNapplus() {
         'Content-Type': 'application/json',
       },
       signal: controller.signal,
-    });
+    }).catch(() => null);
     clearTimeout(timeoutId);
-    const data = await res.json();
+    if (!res || !res.ok) return; // sys_var likely blocked, fall back to manual entry
+
+    const data = await res.json().catch(() => null);
+    if (!data) return;
 
     const rows = data.data || data.result?.data || [];
     if (data.MessageCode === 200 && rows.length > 0) {
