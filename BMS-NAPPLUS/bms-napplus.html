@@ -2513,23 +2513,46 @@ async function sendReport() {
       };
     }
 
-    const isOk = response.RESULT === '1' || response.RESULT === 1;
-    if (isOk) successCount++; else errorCount++;
+    const batchOk = response.RESULT === '1' || response.RESULT === 1;
+    // Build per-row result map from response.LAB_RESULT (if NAPPLUS returns it)
+    const perRowResults = new Map();
+    const responseRows = Array.isArray(response.LAB_RESULT) ? response.LAB_RESULT
+      : Array.isArray(response.result?.LAB_RESULT) ? response.result.LAB_RESULT : [];
+    responseRows.forEach(r => {
+      const id = String(r.LAB_REQUEST_ID || '').trim();
+      if (id) perRowResults.set(id, {
+        ok: r.RESULT === '1' || r.RESULT === 1,
+        message: r.RESULT_MESSAGE || ''
+      });
+    });
 
-    // Update Send Log per row in this batch
-    const status = isOk ? 'success' : 'failed';
-    const msg = response.RESULT_MESSAGE || (isOk ? 'OK' : 'Failed');
-    const logRows = (payload._sourceRows || []).map(sr => ({
-      row: sr.row,
-      status: status,
-      napplusReqId: sr.requestId,
-      message: msg
-    }));
+    // Decide per-row status: prefer per-row response, fall back to batch
+    let batchSuccessRows = 0, batchFailedRows = 0;
+    const logRows = (payload._sourceRows || []).map(sr => {
+      const reqId = sr.requestId;
+      const indiv = perRowResults.get(reqId);
+      const rowOk = indiv ? indiv.ok : batchOk;
+      const rowMsg = indiv ? (indiv.message || (indiv.ok ? 'OK' : 'Failed'))
+                           : (response.RESULT_MESSAGE || (batchOk ? 'OK' : 'Failed'));
+      if (rowOk) batchSuccessRows++; else batchFailedRows++;
+      return {
+        row: sr.row,
+        status: rowOk ? 'success' : 'failed',
+        napplusReqId: reqId,
+        message: rowMsg
+      };
+    });
     if (logRows.length > 0) updateSendLogEntries(logRows);
+
+    // Batch is considered fully OK only if outer RESULT='1' AND no per-row failures
+    const isOk = batchOk && batchFailedRows === 0;
+    if (isOk) successCount++; else errorCount++;
 
     allResponses.push({
       labType: payload.HEADER.LAB_TYPE,
       rowCount: payload.LAB_RESULT.length,
+      successRows: batchSuccessRows,
+      failedRows: batchFailedRows,
       payload: requestBody,
       response: response,
       ok: isOk
@@ -2616,9 +2639,12 @@ ${syntaxHighlight(JSON.stringify(matchStats.unmatchedRows, null, 2))}
     const display = { ...item.response };
     delete display._http_status;
 
+    const rowDetail = (item.successRows !== undefined)
+      ? ` — ${item.successRows} success / ${item.failedRows} failed (of ${item.rowCount} rows)`
+      : '';
     html += `
 <span class="json-key">// == [${i + 1}] LAB_TYPE ${item.labType} - ${item.rowCount} rows ==</span>
-<span class="${item.ok ? 'json-bool' : 'json-null'}">${item.ok ? 'SUCCESS' : 'ERROR'}: ${escHtml(item.response.RESULT_MESSAGE || '')}</span>
+<span class="${item.ok ? 'json-bool' : 'json-null'}">${item.ok ? 'SUCCESS' : 'ERROR'}: ${escHtml(item.response.RESULT_MESSAGE || '')}${rowDetail}</span>
 
 <span class="json-key">Request Body:</span>
 ${syntaxHighlight(JSON.stringify(item.payload, null, 2))}
