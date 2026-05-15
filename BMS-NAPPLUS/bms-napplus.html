@@ -508,6 +508,78 @@
   .sidebar-section.collapsible { display: none; }
   .sidebar-section.collapsible.open { display: block; }
 
+  /* Settings Drawer (slide-in from right) */
+  .drawer-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 150;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+  .drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+  .settings-drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: 380px;
+    max-width: 92vw;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+    z-index: 200;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .settings-drawer.open {
+    transform: translateX(0);
+  }
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .drawer-header h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+  }
+  .drawer-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .drawer-close:hover { color: var(--text); }
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .drawer-section {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
   /* Info Modal */
   .modal-overlay {
     display: none;
@@ -755,12 +827,16 @@
 <!-- Page Wrapper -->
 <div class="page-wrapper">
 
-<!-- Main -->
-<div class="main">
-  <!-- Sidebar -->
-  <div class="sidebar">
+<!-- Settings Drawer (slides in from right) -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleSettings()"></div>
+<aside class="settings-drawer" id="settingsDrawer" aria-hidden="true">
+  <div class="drawer-header">
+    <h2>&#9881; ตั้งค่าการเชื่อมต่อ</h2>
+    <button class="drawer-close" onclick="toggleSettings()" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-body">
     <!-- Session -->
-    <div class="sidebar-section collapsible" id="sectionSession">
+    <div class="drawer-section" id="sectionSession">
       <div class="section-title">BMS Session</div>
       <div class="field-group">
         <div class="field-label">Session ID (GUID)</div>
@@ -774,6 +850,35 @@
       <button class="btn" id="connectBtn" onclick="handleConnect()" style="margin-top:10px">Connect Session</button>
     </div>
 
+    <!-- NAPPLUS Connection -->
+    <div class="drawer-section" id="sectionNapplus">
+      <div class="section-title">NAPPLUS API</div>
+      <div class="field-group">
+        <div class="field-label">HCODE (Hospital Code)</div>
+        <input type="text" class="field-input" id="hcode" placeholder="XXXXX" maxlength="5">
+      </div>
+      <div class="field-group">
+        <div class="field-label">UserName (auto: LAB + HCODE)</div>
+        <input type="text" class="field-input" id="napplusUsername" readonly style="color:var(--text-muted)">
+      </div>
+      <div class="field-group">
+        <div class="field-label">API Key (Token)</div>
+        <input type="password" class="field-input" id="apiKey" placeholder="NAPPLUS API Key">
+      </div>
+      <button class="btn" id="napplusConnectBtn" onclick="handleNapplusConnect()" style="margin-top:10px">Connect NAPPLUS</button>
+      <div class="status-row" id="napplusStatusRow" style="margin-top:6px">
+        <div class="status-dot" id="napplusDot"></div>
+        <span id="napplusStatusTxt" style="color:var(--text-muted)">Not Connected</span>
+      </div>
+      <div class="send-status" id="sendStatus" style="display:none"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
     <!-- Date Filter -->
     <div class="sidebar-section">
       <div class="section-title">Date Filter</div>
@@ -814,29 +919,6 @@
       <button class="btn btn-primary" id="runBtn" onclick="runQuery()" disabled>
         <span id="runBtnText">ค้นหา</span>
       </button>
-    </div>
-
-    <!-- NAPPLUS Connection -->
-    <div class="sidebar-section collapsible" id="sectionNapplus">
-      <div class="section-title">NAPPLUS API</div>
-      <div class="field-group">
-        <div class="field-label">HCODE (Hospital Code)</div>
-        <input type="text" class="field-input" id="hcode" placeholder="XXXXX" maxlength="5">
-      </div>
-      <div class="field-group">
-        <div class="field-label">UserName (auto: LAB + HCODE)</div>
-        <input type="text" class="field-input" id="napplusUsername" readonly style="color:var(--text-muted)">
-      </div>
-      <div class="field-group">
-        <div class="field-label">API Key (Token)</div>
-        <input type="password" class="field-input" id="apiKey" placeholder="NAPPLUS API Key">
-      </div>
-      <button class="btn" id="napplusConnectBtn" onclick="handleNapplusConnect()" style="margin-top:10px">Connect NAPPLUS</button>
-      <div class="status-row" id="napplusStatusRow" style="margin-top:6px">
-        <div class="status-dot" id="napplusDot"></div>
-        <span id="napplusStatusTxt" style="color:var(--text-muted)">Not Connected</span>
-      </div>
-      <div class="send-status" id="sendStatus" style="display:none"></div>
     </div>
   </div>
 
@@ -2742,10 +2824,20 @@ function toggleInfo() {
 function toggleSettings() {
   settingsOpen = !settingsOpen;
   const btn = document.getElementById('settingsBtn');
+  const drawer = document.getElementById('settingsDrawer');
+  const overlay = document.getElementById('drawerOverlay');
   btn.classList.toggle('active', settingsOpen);
-  document.getElementById('sectionSession').classList.toggle('open', settingsOpen);
-  document.getElementById('sectionNapplus').classList.toggle('open', settingsOpen);
+  drawer.classList.toggle('open', settingsOpen);
+  overlay.classList.toggle('open', settingsOpen);
+  drawer.setAttribute('aria-hidden', String(!settingsOpen));
+  // Lock body scroll while open
+  document.body.style.overflow = settingsOpen ? 'hidden' : '';
 }
+
+// Close drawer on ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && settingsOpen) toggleSettings();
+});
 
 // == NAPPLUS Config Persistence (localStorage) ==
 const LS_HCODE = 'napplus-hcode';
