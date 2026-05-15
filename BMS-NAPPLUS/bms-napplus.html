@@ -2071,6 +2071,21 @@ function disconnectNapplus() {
 // Convert test_result string to JSON object per LAB_TYPE (spec page 6)
 // HIV/PCR: {"result1":"Positive"}, CD4: {"result1":"20.0","result2":"350"}
 // VL: {"result1":">","result2":"99.9","result3":"copies/ml"}, BC: {"WBC":"4500"}
+// Map HOSxP common HIV/PCR result values to NAPPLUS-accepted enum
+// NAPPLUS spec accepts: "Positive" / "Negative" / "Inconclusive"
+function mapHivResultValue(raw) {
+  const s = String(raw ?? '').trim().toLowerCase();
+  if (!s) return '';
+  // Positive variants
+  if (s === 'reactive' || s === 'positive' || s === 'pos' || s === 'detected' || s === 'reactive (pos)') return 'Positive';
+  // Negative variants
+  if (s === 'non-reactive' || s === 'non reactive' || s === 'nonreactive' || s === 'negative' || s === 'neg' || s === 'not detected' || s === 'non-detected' || s === 'nondetected') return 'Negative';
+  // Inconclusive variants
+  if (s === 'inconclusive' || s === 'indeterminate' || s === 'equivocal' || s === 'borderline') return 'Inconclusive';
+  // Fall-back: pass through original value (NAPPLUS may still reject)
+  return String(raw).trim();
+}
+
 function formatTestResult(labType, rawResult) {
   // Already a proper object
   if (rawResult && typeof rawResult === 'object' && !Array.isArray(rawResult)) {
@@ -2086,9 +2101,9 @@ function formatTestResult(labType, rawResult) {
   }
 
   switch (String(labType)) {
-    case '101': // ANTIHIV
-    case '102': // PCR
-      return { result1: val };
+    case '101': // ANTIHIV - map to Positive/Negative/Inconclusive
+    case '102': // PCR - same enum
+      return { result1: mapHivResultValue(val) };
     case '201': // CD4 - expect "cd4%, cd4count" or single value
       if (val.includes(',')) {
         const parts = val.split(',').map(s => s.trim());
