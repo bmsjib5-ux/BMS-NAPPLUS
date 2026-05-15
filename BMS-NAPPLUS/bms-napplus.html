@@ -183,6 +183,14 @@
     background: rgba(255,255,255,0.9);
     box-shadow: 0 0 0 3px var(--primary-glow);
   }
+  .field-hint {
+    font-size: 11px;
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 4px;
+    padding-left: 4px;
+    letter-spacing: 0.3px;
+  }
   .field-input[type="date"] {
     color-scheme: light;
   }
@@ -968,10 +976,12 @@
         <div class="field-group">
           <div class="field-label">จากวันที่</div>
           <input type="date" class="field-input" id="dateFrom">
+          <div class="field-hint" id="dateFromBE"></div>
         </div>
         <div class="field-group">
           <div class="field-label">ถึงวันที่</div>
           <input type="date" class="field-input" id="dateTo">
+          <div class="field-hint" id="dateToBE"></div>
         </div>
       </div>
       <div style="display:flex; gap:4px; margin-top:8px;">
@@ -1327,9 +1337,24 @@ function maskValue(val) {
   return '******';
 }
 
+// Always use Asia/Bangkok timezone regardless of browser locale
+const TZ = 'Asia/Bangkok';
+const _todayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit' });
 function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // 'en-CA' locale formats as YYYY-MM-DD (ISO date)
+  return _todayFmt.format(new Date());
+}
+// Format a yyyy-mm-dd string as dd/mm/yyyy(พ.ศ.)
+function formatDateBE(isoStr) {
+  if (!isoStr || !/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return '';
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${parseInt(y) + 543}`;
+}
+function updateDateBEHints() {
+  const f = document.getElementById('dateFromBE');
+  const t = document.getElementById('dateToBE');
+  if (f) f.textContent = formatDateBE(document.getElementById('dateFrom').value);
+  if (t) t.textContent = formatDateBE(document.getElementById('dateTo').value);
 }
 
 function minifySql(sql) {
@@ -1538,11 +1563,13 @@ function setDatePreset(preset) {
   document.getElementById('dateFrom').value = formatDate(from);
   document.getElementById('dateTo').value = formatDate(to);
   renderSqlPreview();
+  updateDateBEHints();
   if (sessionConnected) runQuery();
 }
 
 function formatDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // Use Asia/Bangkok timezone for consistency with todayStr()
+  return _todayFmt.format(d);
 }
 
 // == Lab Type Filter ==
@@ -2990,16 +3017,17 @@ function init() {
   document.getElementById('sessionId').addEventListener('input', updateSessionStatus);
 
   // Date change updates SQL preview
-  document.getElementById('dateFrom').addEventListener('change', renderSqlPreview);
-  document.getElementById('dateTo').addEventListener('change', renderSqlPreview);
+  document.getElementById('dateFrom').addEventListener('change', () => { renderSqlPreview(); updateDateBEHints(); });
+  document.getElementById('dateTo').addEventListener('change', () => { renderSqlPreview(); updateDateBEHints(); });
 
   // NAPPLUS fields: update username + save to localStorage
   document.getElementById('hcode').addEventListener('input', () => { updateNapplusUsername(); saveNapplusConfig(); });
   document.getElementById('apiKey').addEventListener('input', saveNapplusConfig);
   updateNapplusUsername();
 
-  // Render initial SQL preview
+  // Render initial SQL preview + Thai date hints
   renderSqlPreview();
+  updateDateBEHints();
   updateSendBtnState();
 
   // Priority 1: URL parameter
@@ -3162,7 +3190,7 @@ function renderSendLogTab() {
   const fmtDate = (s) => s && s.length === 8 ? `${s.substring(6,8)}/${s.substring(4,6)}/${s.substring(0,4)}` : (s || '-');
   const fmtSent = (s) => {
     if (!s) return '-';
-    try { const d = new Date(s); return d.toLocaleString('th-TH', {hour12:false}); } catch(e) { return s; }
+    try { const d = new Date(s); return d.toLocaleString('th-TH', {hour12:false, timeZone:'Asia/Bangkok'}); } catch(e) { return s; }
   };
 
   let html = `<table class="result-table"><thead><tr>

@@ -681,6 +681,7 @@
   <div class="dash-toolbar">
     <span class="dash-title">Dashboard</span>
     <span class="dash-subtitle" id="hospitalName">-</span>
+    <span class="dash-subtitle" id="dateRangeBE" style="font-weight:700; color:var(--primary)"></span>
     <div class="dash-spacer"></div>
     <button class="dash-range-btn" data-range="today" onclick="setRange('today',this)">Today</button>
     <button class="dash-range-btn" data-range="week" onclick="setRange('week',this)">7 Days</button>
@@ -864,15 +865,24 @@ function maskPatientId(val) {
   return s.substring(0, s.length - 4) + '****';
 }
 
+// Always use Asia/Bangkok timezone for date helpers
+const TZ = 'Asia/Bangkok';
+const _todayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year:'numeric', month:'2-digit', day:'2-digit' });
 function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return _todayFmt.format(new Date());
 }
 
 function dateOffset(days) {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return _todayFmt.format(d);
+}
+
+// Format yyyy-mm-dd ISO date as dd/mm/yyyy(พ.ศ.)
+function formatDateBE(isoStr) {
+  if (!isoStr || !/^\d{4}-\d{2}-\d{2}$/.test(isoStr)) return '';
+  const [y, m, d] = isoStr.split('-');
+  return `${d}/${m}/${parseInt(y) + 543}`;
 }
 
 function toBEDate(dateStr) {
@@ -1181,6 +1191,13 @@ async function loadDashboard() {
   const days = getRangeDays();
   const dateFrom = dateOffset(days);
   const dateTo = todayStr();
+  // Display BE-format date range in the toolbar
+  const rangeEl = document.getElementById('dateRangeBE');
+  if (rangeEl) {
+    rangeEl.textContent = dateFrom === dateTo
+      ? `${formatDateBE(dateFrom)}`
+      : `${formatDateBE(dateFrom)} – ${formatDateBE(dateTo)}`;
+  }
   const startTime = Date.now();
 
   // Query HOSxP data
