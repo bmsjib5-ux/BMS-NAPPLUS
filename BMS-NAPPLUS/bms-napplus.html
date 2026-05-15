@@ -2124,18 +2124,18 @@ function disconnectNapplus() {
 // Convert test_result string to JSON object per LAB_TYPE (spec page 6)
 // HIV/PCR: {"result1":"Positive"}, CD4: {"result1":"20.0","result2":"350"}
 // VL: {"result1":">","result2":"99.9","result3":"copies/ml"}, BC: {"WBC":"4500"}
-// Map HOSxP common HIV/PCR result values to NAPPLUS-accepted enum
-// NAPPLUS spec accepts: "Positive" / "Negative" / "Inconclusive"
+// Map HOSxP common HIV/PCR result values to NAPPLUS-accepted enum.
+// NAPPLUS spec accepts ONLY: "Positive" / "Negative" / "Inconclusive".
+// HOSxP often appends extra info like "Negative 0.245 COI" — extract the
+// leading keyword and ignore numeric suffix/units.
 function mapHivResultValue(raw) {
   const s = String(raw ?? '').trim().toLowerCase();
   if (!s) return '';
-  // Positive variants
-  if (s === 'reactive' || s === 'positive' || s === 'pos' || s === 'detected' || s === 'reactive (pos)') return 'Positive';
-  // Negative variants
-  if (s === 'non-reactive' || s === 'non reactive' || s === 'nonreactive' || s === 'negative' || s === 'neg' || s === 'not detected' || s === 'non-detected' || s === 'nondetected') return 'Negative';
-  // Inconclusive variants
-  if (s === 'inconclusive' || s === 'indeterminate' || s === 'equivocal' || s === 'borderline') return 'Inconclusive';
-  // Fall-back: pass through original value (NAPPLUS may still reject)
+  // Match keyword at start of string (handles "Negative 0.245 COI", "Reactive (pos)" etc.)
+  if (/^(non[\s\-]?reactive|negative|neg|not[\s\-]?detected|non[\s\-]?detected|nondetected)\b/.test(s)) return 'Negative';
+  if (/^(reactive|positive|pos|detected)\b/.test(s)) return 'Positive';
+  if (/^(inconclusive|indeterminate|equivocal|borderline)\b/.test(s)) return 'Inconclusive';
+  // Fall-back: pass through (NAPPLUS will reject with "RESULT1 is invalid")
   return String(raw).trim();
 }
 
@@ -2582,15 +2582,26 @@ async function sendReport() {
     }
 
     const batchOk = response.RESULT === '1' || response.RESULT === 1;
-    // Build per-row result map from response.LAB_RESULT (if NAPPLUS returns it)
+    // Build per-row result map. NAPPLUS may return:
+    //  - response.LAB_RESULT[]      (per-row success/failed with RESULT_MESSAGE)
+    //  - response.LAB_RESULT_ERROR[] (per-row failures with ERROR_MESSAGE)
     const perRowResults = new Map();
-    const responseRows = Array.isArray(response.LAB_RESULT) ? response.LAB_RESULT
+    const successRows = Array.isArray(response.LAB_RESULT) ? response.LAB_RESULT
       : Array.isArray(response.result?.LAB_RESULT) ? response.result.LAB_RESULT : [];
-    responseRows.forEach(r => {
+    successRows.forEach(r => {
       const id = String(r.LAB_REQUEST_ID || '').trim();
       if (id) perRowResults.set(id, {
         ok: r.RESULT === '1' || r.RESULT === 1,
-        message: r.RESULT_MESSAGE || ''
+        message: r.RESULT_MESSAGE || r.ERROR_MESSAGE || ''
+      });
+    });
+    const errorRows = Array.isArray(response.LAB_RESULT_ERROR) ? response.LAB_RESULT_ERROR
+      : Array.isArray(response.result?.LAB_RESULT_ERROR) ? response.result.LAB_RESULT_ERROR : [];
+    errorRows.forEach(r => {
+      const id = String(r.LAB_REQUEST_ID || '').trim();
+      if (id) perRowResults.set(id, {
+        ok: false,
+        message: r.ERROR_MESSAGE || r.RESULT_MESSAGE || 'Failed'
       });
     });
 
