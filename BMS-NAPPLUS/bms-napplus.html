@@ -984,10 +984,11 @@
     <button class="modal-close" onclick="toggleInfo()">&times;</button>
     <h2>ขั้นตอนการใช้งาน BMS-NAPPLUS</h2>
 
-    <h3><span class="step-num">1</span> โครงสร้าง SQL Query (ดึงตรงจาก HOSxP)</h3>
-    <p>ระบบ Query ข้อมูล LAB ผ่าน HOSxP โดยตรง <strong>ไม่ต้องสร้าง View Table</strong> ใช้ SQL ต่อไปนี้:</p>
-    <pre>
- SELECT h.hn,i.gen_order_prefix::integer AS lab_type,
+    <h3><span class="step-num">1</span> สร้าง View Table: bms_napplus ในฐานข้อมูล HOSxP</h3>
+    <p>สร้าง View ในฐานข้อมูล PostgreSQL ของ HOSxP เพื่อดึงข้อมูล LAB ที่ต้องส่ง NAPPLUS:</p>
+    <pre>CREATE OR REPLACE VIEW bms_napplus AS
+ SELECT h.hn,
+    i.gen_order_prefix::integer AS lab_type,
     (( SELECT opdconfig.hospitalcode
            FROM opdconfig
          LIMIT 1))::text AS hcode_request,
@@ -1015,9 +1016,10 @@
      LEFT JOIN patient p ON p.hn::text = h.hn::text
      LEFT JOIN ovst ov ON ov.vn::text = h.vn::text
      LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
-  WHERE i.gen_order_prefix::text = ANY (ARRAY['101','102','201','202','203'])
+  WHERE i.gen_order_prefix::text = ANY (ARRAY['101'::text, '102'::text, '201'::text, '202'::text, '203'::text])
 UNION ALL
- SELECT h.hn,204 AS lab_type,
+ SELECT h.hn,
+    204 AS lab_type,
     (( SELECT opdconfig.hospitalcode
            FROM opdconfig
          LIMIT 1))::text AS hcode_request,
@@ -1050,7 +1052,7 @@ UNION ALL
      LEFT JOIN pttype ptt ON ptt.pttype = ov.pttype
      LEFT JOIN clinicmember cm ON cm.hn::text = h.hn::text
   WHERE cm.nap_number IS NOT NULL
-    AND (i.gen_order_prefix::text = ANY (ARRAY['WBC','Hb','Cr','Chol','FBS','TG','SGPT']::text[]));</pre>
+    AND (i.gen_order_prefix::text = ANY (ARRAY['WBC'::text, 'Hb'::text, 'Cr'::text, 'Chol'::text, 'FBS'::text, 'TG'::text, 'SGPT'::text]));</pre>
     <div class="note">หมายเหตุ: LAB_TYPE 101-203 ใช้ gen_order_prefix ตรง, LAB_TYPE 204 (Blood Chemistry) ดึงจาก lab_items ที่เป็น WBC/Hb/Cr/Chol/FBS/TG/SGPT เฉพาะผู้ป่วยที่มี nap_number ใน clinicmember</div>
 
     <h3><span class="step-num">2</span> ตั้งค่าข้อมูลพื้นฐาน Lab items กำหนดช่อง Prefix</h3>
@@ -1086,7 +1088,7 @@ UNION ALL
     <h3><span class="step-num">4</span> Query ข้อมูล</h3>
     <ul>
       <li>เลือกช่วงวันที่ และ Lab Type ที่ต้องการ</li>
-      <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก HOSxP โดยตรง</li>
+      <li>กดปุ่ม <code>ค้นหา</code> เพื่อดึงข้อมูลจาก View bms_napplus</li>
       <li>ตรวจสอบข้อมูลในตาราง Table</li>
     </ul>
 
@@ -1427,32 +1429,8 @@ function buildSql() {
   const dateTo = document.getElementById('dateTo').value || todayStr();
   const beFrom = toBEDate(dateFrom);
   const beTo = toBEDate(dateTo);
-  // Get hospital code from BMS session (no need to query opdconfig)
-  const hc = String(userInfo?.hospital_code || userInfo?.hcode || userInfo?.hospcode || '').replace(/'/g, '');
 
-  return `SELECT * FROM (
-SELECT h.hn,
-  CASE WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') THEN 204 ELSE i.gen_order_prefix::int END AS lab_type,
-  '${hc}' AS hcode_request, '${hc}' AS hcode_lab,
-  CASE WHEN i.gen_order_prefix IN ('101','102') THEN p.cid
-       WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') THEN cm.nap_number
-       ELSE '' END AS patient_id,
-  h.lab_order_number AS lab_request_id,
-  to_char((date_part('year',h.order_date)+543)::int*10000+date_part('month',h.order_date)::int*100+date_part('day',h.order_date)::int,'FM00000000') AS request_date,
-  ptt.name AS patient_right,
-  CASE WHEN i.gen_order_prefix='SGPT' THEN 'SGPT(ALT)'
-       WHEN i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG') THEN i.gen_order_prefix
-       ELSE i.lab_items_name END AS lab_item,
-  o.lab_order_result AS test_result
-FROM lab_head h
-  LEFT JOIN lab_order o ON o.lab_order_number=h.lab_order_number
-  JOIN lab_items i ON i.lab_items_code=o.lab_items_code
-  LEFT JOIN patient p ON p.hn=h.hn
-  LEFT JOIN ovst ov ON ov.vn=h.vn
-  LEFT JOIN pttype ptt ON ptt.pttype=ov.pttype
-  LEFT JOIN clinicmember cm ON cm.hn=h.hn
-WHERE i.gen_order_prefix IN ('101','102','201','202','203') OR (i.gen_order_prefix IN ('WBC','Hb','Cr','Chol','FBS','TG','SGPT') AND cm.nap_number IS NOT NULL)
-) t WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
+  return `SELECT * FROM bms_napplus WHERE request_date BETWEEN '${beFrom}' AND '${beTo}' ORDER BY request_date DESC`;
 }
 
 // == SQL Syntax Highlight ==
