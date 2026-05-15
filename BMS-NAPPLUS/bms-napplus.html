@@ -1378,11 +1378,10 @@ async function handleConnect() {
   document.getElementById('sessionStatusTxt').textContent = 'Session Active';
   document.getElementById('sessionStatusTxt').style.color = 'var(--success)';
 
-  // Auto-fill HCODE from session
+  // Auto-fill HCODE from session and auto-load saved credentials for this hospital
   const hcodeFromSession = userInfo.hcode || userInfo.hospital_code || userInfo.hospcode || '';
   if (hcodeFromSession) {
-    document.getElementById('hcode').value = hcodeFromSession;
-    updateNapplusUsername();
+    autoLoadAndConnectNapplus(hcodeFromSession);
     updateSendBtnState();
   }
 
@@ -1392,8 +1391,8 @@ async function handleConnect() {
 
   showToast('ok', `Connected: ${userInfo.name || 'OK'} @ ${userInfo.location || ''}`);
 
-  // Auto-fetch NAPPLUS API Key from sys_var and auto-connect
-  await fetchAndConnectNapplus();
+  // Try fetch NAPPLUS API Key from sys_var (only if no saved key for this hcode yet)
+  if (!napplusConnected) await fetchAndConnectNapplus();
 
   // Start auto refresh
   startAutoRefresh();
@@ -2839,22 +2838,56 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && settingsOpen) toggleSettings();
 });
 
-// == NAPPLUS Config Persistence (localStorage) ==
-const LS_HCODE = 'napplus-hcode';
-const LS_APIKEY = 'napplus-apikey';
+// == NAPPLUS Config Persistence (localStorage, per-hcode) ==
+const LS_LAST_HCODE = 'napplus-last-hcode';   // remember last used hcode globally
+const LS_CRED_PREFIX = 'napplus-cred-';        // per-hcode: napplus-cred-{hcode} -> {apiKey,...}
 
 function saveNapplusConfig() {
   const hcode = document.getElementById('hcode').value.trim();
   const apiKey = document.getElementById('apiKey').value.trim();
-  if (hcode) localStorage.setItem(LS_HCODE, hcode);
-  if (apiKey) localStorage.setItem(LS_APIKEY, apiKey);
+  if (!hcode) return;
+  try {
+    const payload = { hcode, apiKey, updatedAt: new Date().toISOString() };
+    localStorage.setItem(LS_CRED_PREFIX + hcode, JSON.stringify(payload));
+    localStorage.setItem(LS_LAST_HCODE, hcode);
+  } catch(e) { /* storage may be blocked */ }
 }
 
-function loadNapplusConfig() {
-  const hcode = localStorage.getItem(LS_HCODE) || '';
-  const apiKey = localStorage.getItem(LS_APIKEY) || '';
-  if (hcode) document.getElementById('hcode').value = hcode;
-  if (apiKey) document.getElementById('apiKey').value = apiKey;
+function loadNapplusConfigForHcode(hcode) {
+  if (!hcode) return null;
+  try {
+    const raw = localStorage.getItem(LS_CRED_PREFIX + hcode);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+// Load credentials for a specific hcode and populate the fields
+function loadNapplusConfig(hcodeOverride) {
+  const hcode = hcodeOverride || localStorage.getItem(LS_LAST_HCODE) || '';
+  if (!hcode) return false;
+  const cred = loadNapplusConfigForHcode(hcode);
+  if (!cred) return false;
+  if (cred.hcode) document.getElementById('hcode').value = cred.hcode;
+  if (cred.apiKey) document.getElementById('apiKey').value = cred.apiKey;
+  updateNapplusUsername();
+  return !!cred.apiKey;
+}
+
+// Called after BMS session connects to auto-fill + connect NAPPLUS for this hospital
+function autoLoadAndConnectNapplus(hcodeFromSession) {
+  if (!hcodeFromSession || hcodeFromSession.length !== 5) return;
+  // Always set hcode from session (overrides previous)
+  document.getElementById('hcode').value = hcodeFromSession;
+  updateNapplusUsername();
+  // Try load saved API key for this specific hospital
+  const cred = loadNapplusConfigForHcode(hcodeFromSession);
+  if (cred && cred.apiKey) {
+    document.getElementById('apiKey').value = cred.apiKey;
+    updateSendBtnState();
+    // Auto-connect
+    if (!napplusConnected) handleNapplusConnect();
+  }
 }
 
 // == Init ==

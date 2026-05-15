@@ -1005,7 +1005,20 @@ async function autoConnectNapplus() {
     // Silent — sys_var may be blocked at hospital level
   }
 
-  // fallback: localStorage
+  // fallback: per-hcode localStorage (saved by Query Viewer page)
+  if (!napplusApiKey && napplusHcode) {
+    try {
+      const raw = localStorage.getItem('napplus-cred-' + napplusHcode);
+      if (raw) {
+        const cred = JSON.parse(raw);
+        if (cred && cred.apiKey) {
+          napplusApiKey = cred.apiKey;
+          napplusConnected = true;
+        }
+      }
+    } catch(e) { /* corrupt storage entry */ }
+  }
+  // Legacy fallback (older global keys)
   if (!napplusApiKey) {
     napplusApiKey = localStorage.getItem('napplus-apikey') || '';
     if (!napplusHcode) napplusHcode = localStorage.getItem('napplus-hcode') || '';
