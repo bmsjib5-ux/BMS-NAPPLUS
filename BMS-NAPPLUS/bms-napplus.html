@@ -2213,11 +2213,15 @@ async function callGetLabRequest(hcode, apiKey, labType, beFrom, beTo, labStatus
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
-    const data = await res.json();
+    // NAPPLUS uses HTTP 417 for header/auth errors but still returns JSON body
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) { return { ok: false, error: `HTTP ${res.status}: ${text.substring(0, 100)}` }; }
     if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
       return { ok: true, rows: data.LAB_REQUEST };
     }
-    return { ok: false, error: data.RESULT_MESSAGE || 'unknown' };
+    return { ok: false, error: data.RESULT_MESSAGE || `HTTP ${res.status}` };
   } catch (e) {
     return { ok: false, error: e.name === 'AbortError' ? 'Timeout' : e.message };
   }
@@ -2793,12 +2797,21 @@ async function checkLabRequest() {
       });
 
       clearTimeout(timeoutId);
-      const data = await res.json();
+      // NAPPLUS may return HTTP 417 with JSON body for auth/header errors —
+      // still parse body to extract RESULT_MESSAGE
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (e) {
+        lastError = `HTTP ${res.status}: ${text.substring(0, 120)}`;
+        continue;
+      }
 
       if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
         allResults.push(...data.LAB_REQUEST);
       } else if (data.RESULT !== '1' && data.RESULT !== 1) {
-        lastError = data.RESULT_MESSAGE || 'Unknown error';
+        // Capture full error including HTTP status for auth issues
+        lastError = data.RESULT_MESSAGE || `HTTP ${res.status}`;
       }
     } catch (e) {
       lastError = e.name === 'AbortError' ? 'Timeout' : e.message;
@@ -2818,10 +2831,11 @@ async function checkLabRequest() {
 
   renderCheckTable(allResults);
 
-  if (allResults.length > 0) {
+  // If ANY auth/password error occurred, show it even if some lab types returned data
+  if (lastError) {
+    showToast('err', `Error: ${lastError}${lastError.toLowerCase().includes('password') ? ' — กรุณาตรวจสอบ API Key ที่เมนูตั้งค่า' : ''}`);
+  } else if (allResults.length > 0) {
     showToast('ok', `ตรวจสอบสำเร็จ - ${allResults.length} รายการ (${elapsed}ms)`);
-  } else if (lastError) {
-    showToast('err', `Error: ${lastError}`);
   } else {
     showToast('info', `ไม่พบข้อมูล LAB_REQUEST ในช่วงวันที่ที่เลือก`);
   }
@@ -2933,12 +2947,19 @@ async function checkLabResult() {
       });
 
       clearTimeout(timeoutId);
-      const data = await res.json();
+      // NAPPLUS may return HTTP 417 with JSON body for header errors
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch (e) {
+        lastError = `HTTP ${res.status}: ${text.substring(0, 120)}`;
+        continue;
+      }
 
       if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_RESULT)) {
         allResults.push(...data.LAB_RESULT);
       } else if (data.RESULT !== '1' && data.RESULT !== 1) {
-        lastError = data.RESULT_MESSAGE || 'Unknown error';
+        lastError = data.RESULT_MESSAGE || `HTTP ${res.status}`;
       }
     } catch (e) {
       lastError = e.name === 'AbortError' ? 'Timeout' : e.message;
@@ -2957,10 +2978,10 @@ async function checkLabResult() {
 
   renderResultTable(allResults);
 
-  if (allResults.length > 0) {
+  if (lastError) {
+    showToast('err', `Error: ${lastError}${lastError.toLowerCase().includes('password') ? ' — กรุณาตรวจสอบ API Key ที่เมนูตั้งค่า' : ''}`);
+  } else if (allResults.length > 0) {
     showToast('ok', `ดึงผลตรวจสำเร็จ - ${allResults.length} รายการ (${elapsed}ms)`);
-  } else if (lastError) {
-    showToast('err', `Error: ${lastError}`);
   } else {
     showToast('info', 'ไม่พบผลตรวจ LAB_RESULT ในช่วงวันที่ที่เลือก');
   }
