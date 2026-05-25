@@ -2856,6 +2856,7 @@ async function checkLabRequest() {
       // NAPPLUS may return HTTP 417 with JSON body for auth/header errors —
       // still parse body to extract RESULT_MESSAGE
       const text = await res.text();
+      console.log(`[checkLabRequest] LAB_TYPE ${labType} -> HTTP ${res.status}, body:`, text.substring(0, 500));
       let data;
       try { data = JSON.parse(text); }
       catch (e) {
@@ -2866,8 +2867,8 @@ async function checkLabRequest() {
       if ((data.RESULT === '1' || data.RESULT === 1) && Array.isArray(data.LAB_REQUEST)) {
         allResults.push(...data.LAB_REQUEST);
       } else if (data.RESULT !== '1' && data.RESULT !== 1) {
-        // Capture full error including HTTP status for auth issues
-        lastError = data.RESULT_MESSAGE || `HTTP ${res.status}`;
+        // Capture full error including HTTP status and LAB_TYPE context
+        lastError = `[${labType}] ${data.RESULT_MESSAGE || `HTTP ${res.status}`}`;
       }
     } catch (e) {
       lastError = e.name === 'AbortError' ? 'Timeout' : e.message;
