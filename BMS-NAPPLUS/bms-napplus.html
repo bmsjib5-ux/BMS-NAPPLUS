@@ -1625,11 +1625,13 @@ function toggleLabFilter(type, el) {
     document.querySelectorAll('.lab-pill').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
   } else {
-    document.querySelector('.lab-pill.all').classList.remove('active');
+    document.querySelector('.lab-filter-row .lab-pill.all').classList.remove('active');
     el.classList.toggle('active');
-    activeLabTypes = [...document.querySelectorAll('.lab-pill.active:not(.all)')].map(p => p.dataset.type);
+    // Scope selector to .lab-filter-row to avoid picking up Send Log filter pills
+    activeLabTypes = [...document.querySelectorAll('.lab-filter-row .lab-pill.active:not(.all)')]
+      .map(p => p.dataset.type).filter(Boolean);
     if (activeLabTypes.length === 0) {
-      document.querySelector('.lab-pill.all').classList.add('active');
+      document.querySelector('.lab-filter-row .lab-pill.all').classList.add('active');
     }
   }
 
@@ -2822,9 +2824,9 @@ async function checkLabRequest() {
   const beTo = toBEDate(dateTo);
 
   // Determine lab types to check
-  const labTypesToCheck = activeLabTypes.length > 0
+  const labTypesToCheck = (activeLabTypes.length > 0
     ? activeLabTypes
-    : ['101','102','201','202','203','204'];
+    : ['101','102','201','202','203','204']).filter(Boolean);
 
   const btn = document.getElementById('checkBtn');
   btn.disabled = true;
@@ -2975,9 +2977,9 @@ async function checkLabResult() {
   const beFrom = toBEDate(dateFrom);
   const beTo = toBEDate(dateTo);
 
-  const labTypesToCheck = activeLabTypes.length > 0
+  const labTypesToCheck = (activeLabTypes.length > 0
     ? activeLabTypes
-    : ['101','102','201','202','203','204'];
+    : ['101','102','201','202','203','204']).filter(Boolean);
 
   const btn = document.getElementById('resultBtn');
   btn.disabled = true;
