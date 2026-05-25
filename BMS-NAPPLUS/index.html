@@ -860,9 +860,13 @@ function escHtml(s) {
 }
 
 function maskPatientId(val) {
-  const s = String(val || '');
-  if (s.length <= 4) return s;
-  return s.substring(0, s.length - 4) + '****';
+  const s = String(val || '').trim();
+  if (!s) return '';
+  // Only mask 13-digit Thai CID; NAP IDs (D4-XXXX-XXXX) shown as-is
+  if (/^\d{13}$/.test(s)) {
+    return s.substring(0, s.length - 4) + '****';
+  }
+  return s;
 }
 
 // Always use Asia/Bangkok timezone for date helpers

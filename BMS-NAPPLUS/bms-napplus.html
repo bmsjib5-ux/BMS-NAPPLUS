@@ -1365,9 +1365,13 @@ function escHtml(s) {
 }
 
 function maskPatientId(val) {
-  const s = String(val || '');
-  if (s.length <= 4) return s;
-  return s.substring(0, s.length - 4) + '****';
+  const s = String(val || '').trim();
+  if (!s) return '';
+  // Only mask if it's a 13-digit Thai CID; NAP IDs (e.g., D4-2006-024XXX) shown as-is
+  if (/^\d{13}$/.test(s)) {
+    return s.substring(0, s.length - 4) + '****';
+  }
+  return s;
 }
 
 function maskValue(val) {
