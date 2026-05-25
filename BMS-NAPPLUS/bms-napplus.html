@@ -2139,6 +2139,29 @@ function mapHivResultValue(raw) {
   return String(raw).trim();
 }
 
+// Map HOSxP lab_item code to NAPPLUS BC field key (case-sensitive match required)
+function mapBcLabItem(item) {
+  const s = String(item || '').trim();
+  const up = s.toUpperCase();
+  if (up === 'WBC') return 'WBC';
+  if (up === 'HB') return 'Hb';
+  if (up === 'CR') return 'Cr';
+  if (up === 'CHOL') return 'Chol';
+  if (up === 'FBS') return 'FBS';
+  if (up === 'TG') return 'TG';
+  if (up === 'SGPT' || up === 'SGPT(ALT)' || up === 'ALT') return 'sGPT(ALT)';
+  return s; // unknown, pass through
+}
+
+// Extract numeric value from "13.4 g/dL" -> "13.4"
+function extractNumericValue(s) {
+  if (s === null || s === undefined) return '';
+  const str = String(s).trim();
+  if (!str) return '';
+  const m = str.match(/^[+-]?\d+(\.\d+)?/);
+  return m ? m[0] : str;
+}
+
 function formatTestResult(labType, rawResult) {
   // Already a proper object
   if (rawResult && typeof rawResult === 'object' && !Array.isArray(rawResult)) {
@@ -2332,87 +2355,120 @@ function buildLabResultPayloads(napplusMap) {
   const matchStats = { matched: 0, unmatched: 0, unmatchedRows: [], unmatchedSourceRows: [] };
   const consumedReqIds = new Set(); // Prevent reusing same NAPPLUS LAB_REQUEST_ID
   const payloads = [];
+
+  // Shared matching helper (returns requestId or '')
+  function matchRow(row, labType) {
+    const pidRaw = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
+    const pidDigits = pidRaw.replace(/\D/g, '');
+    const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
+    if (!napplusMap || (!pidDigits && !pidRaw)) return { requestId: '', pidRaw, pidDigits, rd };
+    const tries = [
+      `PID_RD|${pidDigits}|${rd}`,
+      `PID_RD|${pidRaw}|${rd}`,
+      `${pidDigits}|${labType}|${rd}`,
+      `${pidRaw}|${labType}|${rd}`,
+      `${pidDigits}|${labType}`,
+      `${pidRaw}|${labType}`,
+    ];
+    for (const key of tries) {
+      if (!key || key.startsWith('|') || key.endsWith('|') || key.includes('||')) continue;
+      const v = napplusMap.get(key);
+      if (v) return { requestId: v, pidRaw, pidDigits, rd };
+    }
+    return { requestId: '', pidRaw, pidDigits, rd };
+  }
+
+  function pushUnmatched(row, labType, pidRaw, pidDigits, rd) {
+    const labOrder = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '').trim();
+    const sameTypeKeys = [];
+    if (napplusMap) {
+      for (const k of napplusMap.keys()) {
+        if ((k.includes(`|${labType}`) || k.startsWith('PID_RD|')) && !sameTypeKeys.includes(k)) {
+          sameTypeKeys.push(k);
+          if (sameTypeKeys.length >= 8) break;
+        }
+      }
+    }
+    matchStats.unmatched++;
+    matchStats.unmatchedRows.push({
+      lab_type: labType, patient_id_hosxp: pidRaw, patient_id_digits: pidDigits,
+      lab_order_hosxp: labOrder, request_date_hosxp: rd,
+      tried_keys: [`PID_RD|${pidDigits}|${rd}`, `${pidDigits}|${labType}|${rd}`, `${pidDigits}|${labType}`],
+      available_in_napplus: sameTypeKeys
+    });
+    matchStats.unmatchedSourceRows.push(row);
+  }
+
   for (const [labType, rows] of Object.entries(grouped)) {
     const results = [];
     const sourceRows = [];
-    rows.forEach(row => {
-      const rawResult = row.test_result ?? row.TEST_RESULT ?? '';
-      const testResult = formatTestResult(labType, rawResult);
 
-      // Try to match with NAPPLUS LAB_REQUEST_ID
-      const pidRaw = String(row.patient_id ?? row.PATIENT_ID ?? '').trim();
-      const pidDigits = pidRaw.replace(/\D/g, '');
-      const rd = String(row.request_date ?? row.REQUEST_DATE ?? '').trim();
-      const labOrder = String(row.lab_request_id ?? row.LAB_REQUEST_ID ?? '').trim();
-      let requestId = '';
-      let matchedBy = '';
-
-      if (napplusMap && (pidDigits || pidRaw)) {
-        // ALL keys require patient_id (no date-only fallback to avoid cross-patient mismatch)
-        const tries = [
-          [`PID_RD|${pidDigits}|${rd}`, 'pid+request_date'],
-          [`PID_RD|${pidRaw}|${rd}`, 'pid_raw+request_date'],
-          [`${pidDigits}|${labType}|${rd}`, 'pid+type+date'],
-          [`${pidRaw}|${labType}|${rd}`, 'pid_raw+type+date'],
-          [`${pidDigits}|${labType}`, 'pid+type'],
-          [`${pidRaw}|${labType}`, 'pid_raw+type'],
-        ];
-        for (const [key, label] of tries) {
-          if (!key || key.startsWith('|') || key.endsWith('|') || key.includes('||')) continue;
-          const v = napplusMap.get(key);
-          if (v && !consumedReqIds.has(v)) {
-            requestId = v;
-            matchedBy = label;
-            consumedReqIds.add(v); // mark as used
-            break;
-          }
+    if (labType === '204') {
+      // LAB_TYPE 204 Blood Chemistry: NAPPLUS expects ONE row per patient with
+      // ALL BC values merged into a single TEST_RESULT object.
+      // Group HOSxP rows by matched LAB_REQUEST_ID, merge all sub-items.
+      const groups = new Map(); // reqId -> { firstRow, mergedResult: {}, sourceRows: [] }
+      rows.forEach(row => {
+        const { requestId, pidRaw, pidDigits, rd } = matchRow(row, labType);
+        if (!requestId) { pushUnmatched(row, labType, pidRaw, pidDigits, rd); return; }
+        if (!groups.has(requestId)) {
+          groups.set(requestId, { firstRow: row, mergedResult: {}, sourceRows: [] });
         }
-      }
-
-      if (!requestId) {
-        // Diagnostic: find what's in the map for this lab_type / patient
-        const sameTypeKeys = [];
-        if (napplusMap) {
-          for (const k of napplusMap.keys()) {
-            if ((k.includes(`|${labType}`) || k.startsWith('PID_RD|'))
-                && !sameTypeKeys.includes(k)) {
-              sameTypeKeys.push(k);
-              if (sameTypeKeys.length >= 8) break;
-            }
-          }
-        }
-        matchStats.unmatched++;
-        matchStats.unmatchedRows.push({
-          lab_type: labType,
-          patient_id_hosxp: pidRaw,
-          patient_id_digits: pidDigits,
-          lab_order_hosxp: labOrder,
-          request_date_hosxp: rd,
-          tried_keys: [
-            `PID_RD|${pidDigits}|${rd}`,
-            `${pidDigits}|${labType}|${rd}`,
-            `${pidDigits}|${labType}`
-          ],
-          available_in_napplus: sameTypeKeys
-        });
-        matchStats.unmatchedSourceRows.push(row);
-        return;
-      }
-      matchStats.matched++;
-      sourceRows.push({ row, requestId, matchedBy });
-
-      results.push({
-        LAB_TYPE: String(labType),
-        LAB_REQUEST_ID: requestId,
-        RESULT_DATE: String(row.request_date ?? row.REQUEST_DATE ?? ''),
-        HCODE_LAB: String(row.hcode_lab ?? row.HCODE_LAB ?? hcode),
-        HCODE_LAB_OTHER: '',
-        IS_DETECTED: rawResult ? '1' : '0',
-        TEST_RESULT: testResult,
-        REMARK_NODETECTED: String(row.remark_nodetected ?? row.REMARK_NODETECTED ?? ''),
-        LAB_ITEM: String(row.lab_item ?? row.LAB_ITEM ?? '')
+        const grp = groups.get(requestId);
+        grp.sourceRows.push(row);
+        const labItem = String(row.lab_item ?? row.LAB_ITEM ?? '').trim();
+        const rawVal = String(row.test_result ?? row.TEST_RESULT ?? '').trim();
+        const fieldKey = mapBcLabItem(labItem);
+        const numVal = extractNumericValue(rawVal);
+        if (fieldKey && numVal !== '') grp.mergedResult[fieldKey] = numVal;
       });
-    });
+
+      // Build one LAB_RESULT per group
+      for (const [requestId, grp] of groups) {
+        matchStats.matched += grp.sourceRows.length;
+        grp.sourceRows.forEach(r => sourceRows.push({ row: r, requestId, matchedBy: 'BC-grouped' }));
+        const hasAny = Object.keys(grp.mergedResult).length > 0;
+        results.push({
+          LAB_TYPE: '204',
+          LAB_REQUEST_ID: requestId,
+          RESULT_DATE: String(grp.firstRow.request_date ?? grp.firstRow.REQUEST_DATE ?? ''),
+          HCODE_LAB: String(grp.firstRow.hcode_lab ?? grp.firstRow.HCODE_LAB ?? hcode),
+          HCODE_LAB_OTHER: '',
+          IS_DETECTED: hasAny ? '1' : '0',
+          TEST_RESULT: grp.mergedResult,
+          REMARK_NODETECTED: '',
+          LAB_ITEM: 'Blood Chemistry'
+        });
+      }
+    } else {
+      // LAB_TYPE 101-203: one row per source row
+      rows.forEach(row => {
+        const rawResult = row.test_result ?? row.TEST_RESULT ?? '';
+        const testResult = formatTestResult(labType, rawResult);
+        const { requestId, pidRaw, pidDigits, rd } = matchRow(row, labType);
+
+        // Enforce no-reuse of NAPPLUS requestId (1-to-1 for non-BC)
+        let finalReqId = requestId;
+        if (finalReqId && consumedReqIds.has(finalReqId)) finalReqId = '';
+        if (finalReqId) consumedReqIds.add(finalReqId);
+
+        if (!finalReqId) { pushUnmatched(row, labType, pidRaw, pidDigits, rd); return; }
+        matchStats.matched++;
+        sourceRows.push({ row, requestId: finalReqId, matchedBy: 'pid+date' });
+
+        results.push({
+          LAB_TYPE: String(labType),
+          LAB_REQUEST_ID: finalReqId,
+          RESULT_DATE: String(row.request_date ?? row.REQUEST_DATE ?? ''),
+          HCODE_LAB: String(row.hcode_lab ?? row.HCODE_LAB ?? hcode),
+          HCODE_LAB_OTHER: '',
+          IS_DETECTED: rawResult ? '1' : '0',
+          TEST_RESULT: testResult,
+          REMARK_NODETECTED: String(row.remark_nodetected ?? row.REMARK_NODETECTED ?? ''),
+          LAB_ITEM: String(row.lab_item ?? row.LAB_ITEM ?? '')
+        });
+      });
+    }
 
     if (results.length === 0) continue; // skip empty payload
 
