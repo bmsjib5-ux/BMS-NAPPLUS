@@ -823,7 +823,30 @@
     padding: 16px 0;
     overflow-y: auto;
     box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+    transform: translateX(0);
+    transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
   }
+  .nav-sidebar.collapsed { transform: translateX(-100%); }
+  .page-wrapper { transition: margin-left 0.25s cubic-bezier(0.25, 0.1, 0.25, 1); }
+  .page-wrapper.full { margin-left: 0; }
+
+  /* Sidebar toggle button (hamburger on header) */
+  .sidebar-toggle {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .sidebar-toggle:hover { background: rgba(255,255,255,0.18); border-color: rgba(34,211,238,0.5); }
   .nav-sidebar .nav-brand {
     padding: 4px 20px 18px;
     border-bottom: 1px solid #222;
@@ -900,6 +923,7 @@
 
 <!-- Header -->
 <div class="header">
+  <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="ซ่อน/แสดง เมนู">&#9776;</button>
   <div class="header-logo">
     <div class="logo-shield">&#9769;</div>
     <h1>NAPPLUS LAB <span>Query Viewer</span></h1>
@@ -3153,6 +3177,29 @@ let settingsOpen = false;
 function toggleInfo() {
   document.getElementById('infoModal').classList.toggle('open');
 }
+
+// Sidebar collapse/expand (state persisted in localStorage)
+const LS_SIDEBAR_COLLAPSED = 'napplus-sidebar-collapsed';
+function applySidebarState(collapsed) {
+  const nav = document.querySelector('.nav-sidebar');
+  const wrap = document.querySelector('.page-wrapper');
+  if (nav) nav.classList.toggle('collapsed', collapsed);
+  if (wrap) wrap.classList.toggle('full', collapsed);
+}
+function toggleSidebar() {
+  const cur = localStorage.getItem(LS_SIDEBAR_COLLAPSED) === '1';
+  const next = !cur;
+  localStorage.setItem(LS_SIDEBAR_COLLAPSED, next ? '1' : '0');
+  applySidebarState(next);
+}
+// Apply saved state immediately on script load
+(function() {
+  const collapsed = localStorage.getItem(LS_SIDEBAR_COLLAPSED) === '1';
+  if (collapsed) {
+    // Defer to next tick so DOM nodes exist
+    setTimeout(() => applySidebarState(true), 0);
+  }
+})();
 
 function toggleSettings() {
   settingsOpen = !settingsOpen;
