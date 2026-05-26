@@ -995,7 +995,15 @@
         <div class="field-label">API Key (Token)</div>
         <input type="password" class="field-input" id="apiKey" placeholder="NAPPLUS API Key">
       </div>
-      <button class="btn" id="napplusConnectBtn" onclick="handleNapplusConnect()" style="margin-top:10px">Connect NAPPLUS</button>
+      <label class="remember-toggle" style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; user-select:none; font-size:12px; color:var(--text);">
+        <input type="checkbox" id="rememberApiKey" checked style="cursor:pointer; width:16px; height:16px; accent-color:var(--primary);">
+        <span>จำค่า HCODE และ API Key (เก็บในเครื่องตาม HCODE)</span>
+      </label>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn btn-primary" id="napplusConnectBtn" onclick="handleNapplusConnect()" style="flex:1">Connect NAPPLUS</button>
+        <button class="btn" type="button" onclick="saveNapplusConfigManual()" title="บันทึกค่าโดยไม่ต้องเชื่อมต่อ" style="flex:0 0 auto; width:auto; padding:9px 14px">บันทึก</button>
+        <button class="btn" type="button" onclick="clearNapplusConfigForCurrentHcode()" title="ลบค่าที่จำไว้ของ HCODE นี้" style="flex:0 0 auto; width:auto; padding:9px 14px; color:var(--error); border-color:var(--error)">ลบที่จำ</button>
+      </div>
       <div class="status-row" id="napplusStatusRow" style="margin-top:6px">
         <div class="status-dot" id="napplusDot"></div>
         <span id="napplusStatusTxt" style="color:var(--text-muted)">Not Connected</span>
@@ -3155,7 +3163,28 @@ document.addEventListener('keydown', (e) => {
 const LS_LAST_HCODE = 'napplus-last-hcode';   // remember last used hcode globally
 const LS_CRED_PREFIX = 'napplus-cred-';        // per-hcode: napplus-cred-{hcode} -> {apiKey,...}
 
+function isRememberEnabled() {
+  const cb = document.getElementById('rememberApiKey');
+  return cb ? cb.checked : true; // default true if checkbox not yet rendered
+}
+
+// When user unchecks "Remember", also remove existing stored credential for current hcode
+function onRememberToggleChange() {
+  if (!isRememberEnabled()) {
+    const hcode = document.getElementById('hcode').value.trim();
+    if (hcode) {
+      try { localStorage.removeItem(LS_CRED_PREFIX + hcode); } catch(e) {}
+      showToast('info', 'ปิดการจำค่า + ลบค่าที่จำของ HCODE นี้แล้ว');
+    }
+  } else {
+    // Re-enable → save current values immediately if both filled
+    saveNapplusConfig();
+  }
+}
+
 function saveNapplusConfig() {
+  // Respect the "Remember" toggle — skip save if user opted out
+  if (!isRememberEnabled()) return;
   const hcode = document.getElementById('hcode').value.trim();
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!hcode) return;
@@ -3164,6 +3193,38 @@ function saveNapplusConfig() {
     localStorage.setItem(LS_CRED_PREFIX + hcode, JSON.stringify(payload));
     localStorage.setItem(LS_LAST_HCODE, hcode);
   } catch(e) { /* storage may be blocked */ }
+}
+
+// Manual "บันทึก" button: save current fields explicitly with toast feedback
+function saveNapplusConfigManual() {
+  const hcode = document.getElementById('hcode').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!hcode) { showToast('err', 'กรุณากรอก HCODE'); return; }
+  if (!apiKey) { showToast('err', 'กรุณากรอก API Key'); return; }
+  // Force-save (regardless of toggle) and tick the toggle ON
+  const cb = document.getElementById('rememberApiKey');
+  if (cb) cb.checked = true;
+  try {
+    const payload = { hcode, apiKey, updatedAt: new Date().toISOString() };
+    localStorage.setItem(LS_CRED_PREFIX + hcode, JSON.stringify(payload));
+    localStorage.setItem(LS_LAST_HCODE, hcode);
+    showToast('ok', `บันทึก HCODE ${hcode} แล้ว — ครั้งถัดไปจะ auto-fill`);
+  } catch(e) {
+    showToast('err', 'บันทึกไม่สำเร็จ: ' + e.message);
+  }
+}
+
+// Remove saved credential for the currently displayed HCODE
+function clearNapplusConfigForCurrentHcode() {
+  const hcode = document.getElementById('hcode').value.trim();
+  if (!hcode) { showToast('err', 'ไม่มี HCODE ให้ลบ'); return; }
+  if (!confirm(`ลบค่าที่จำไว้ของ HCODE ${hcode}?`)) return;
+  try {
+    localStorage.removeItem(LS_CRED_PREFIX + hcode);
+    showToast('info', `ลบค่าที่จำของ HCODE ${hcode} แล้ว`);
+  } catch(e) {
+    showToast('err', 'ลบไม่สำเร็จ: ' + e.message);
+  }
 }
 
 function loadNapplusConfigForHcode(hcode) {
@@ -3240,6 +3301,8 @@ function init() {
   // NAPPLUS fields: update username + save to localStorage
   document.getElementById('hcode').addEventListener('input', () => { updateNapplusUsername(); saveNapplusConfig(); });
   document.getElementById('apiKey').addEventListener('input', saveNapplusConfig);
+  const rememberCb = document.getElementById('rememberApiKey');
+  if (rememberCb) rememberCb.addEventListener('change', onRememberToggleChange);
   updateNapplusUsername();
 
   // Render initial SQL preview + Thai date hints
