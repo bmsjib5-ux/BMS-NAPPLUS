@@ -2027,6 +2027,10 @@ function updateNapplusUsername() {
 
 async function fetchAndConnectNapplus() {
   if (!sessionConnected || !connectionConfig) return;
+  // If user already has API key in field (from per-hcode storage), skip sys_var fetch
+  // to avoid an unnecessary network call to a likely-blocked table
+  const currentApiKey = document.getElementById('apiKey').value.trim();
+  if (currentApiKey) return;
 
   const sql = "select sys_var from sys_var where sys_name = 'NAPPLUS_KEY'";
   const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${encodeURIComponent(APP_NAME)}`;

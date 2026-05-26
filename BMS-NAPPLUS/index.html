@@ -1046,12 +1046,37 @@ async function connectSession(sessionId) {
 async function autoConnectNapplus() {
   if (!sessionConnected || !connectionConfig || !napplusHcode) return;
 
+  // 1. Try per-hcode localStorage FIRST (avoid unnecessary network call)
+  if (napplusHcode) {
+    try {
+      const raw = localStorage.getItem('napplus-cred-' + napplusHcode);
+      if (raw) {
+        const cred = JSON.parse(raw);
+        if (cred && cred.apiKey) {
+          napplusApiKey = cred.apiKey;
+          napplusConnected = true;
+          return; // Found saved key, skip sys_var query
+        }
+      }
+    } catch(e) { /* corrupt storage entry */ }
+  }
+
+  // 2. Try legacy global storage
+  if (!napplusApiKey) {
+    napplusApiKey = localStorage.getItem('napplus-apikey') || '';
+    if (!napplusHcode) napplusHcode = localStorage.getItem('napplus-hcode') || '';
+    if (napplusHcode && napplusApiKey) {
+      napplusConnected = true;
+      return;
+    }
+  }
+
+  // 3. Last resort: try sys_var query from HOSxP (may be blocked → silent fail)
   try {
     const sql = "select sys_var from sys_var where sys_name = 'NAPPLUS_KEY'";
     const fullUrl = `${connectionConfig.apiUrl}/api/sql?sql=${encodeURIComponent(sql)}&app=${encodeURIComponent(APP_NAME)}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
-    // sys_var is often blocked — silently skip if it fails
     const res = await fetch(fullUrl, {
       method: 'GET',
       headers: {
@@ -1071,26 +1096,6 @@ async function autoConnectNapplus() {
     }
   } catch (e) {
     // Silent — sys_var may be blocked at hospital level
-  }
-
-  // fallback: per-hcode localStorage (saved by Query Viewer page)
-  if (!napplusApiKey && napplusHcode) {
-    try {
-      const raw = localStorage.getItem('napplus-cred-' + napplusHcode);
-      if (raw) {
-        const cred = JSON.parse(raw);
-        if (cred && cred.apiKey) {
-          napplusApiKey = cred.apiKey;
-          napplusConnected = true;
-        }
-      }
-    } catch(e) { /* corrupt storage entry */ }
-  }
-  // Legacy fallback (older global keys)
-  if (!napplusApiKey) {
-    napplusApiKey = localStorage.getItem('napplus-apikey') || '';
-    if (!napplusHcode) napplusHcode = localStorage.getItem('napplus-hcode') || '';
-    if (napplusHcode && napplusApiKey) napplusConnected = true;
   }
 }
 
